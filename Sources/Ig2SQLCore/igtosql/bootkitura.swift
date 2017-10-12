@@ -7,7 +7,7 @@
 //
 
 import Foundation
-/*
+
 import Kitura
 
 
@@ -28,4 +28,4 @@ func bootKitura() {
     // Start the Kitura runloop (this call never returns)
     Kitura.run()
 }
-*/
+

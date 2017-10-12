@@ -5,6 +5,12 @@ import PackageDescription
 
 let package = Package(
     name: "Ig2SQL",
+    dependencies: [
+        .package(
+            url:  "https://github.com/IBM-Swift/Kitura.git",
+            from: "1.0.0"
+        )
+    ],
     targets: [
         .testTarget(
             name: "Ig2SQLTests",
@@ -15,6 +21,7 @@ let package = Package(
             name: "Ig2SQL",
             dependencies: ["Ig2SQLCore"]
         ),
-        .target(name: "Ig2SQLCore")
+        .target(name: "Ig2SQLCore",
+                dependencies: ["Kitura"])
     ]
 )

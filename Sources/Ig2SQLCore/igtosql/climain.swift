@@ -110,6 +110,7 @@ public func cliMain(_ argcv:Argstuff) {
             } )
         }
     case .bootkitura:
-        print("bootkitura NYI")
+        print("entering bootkitura")
+        bootKitura()
     }
 }//theMain

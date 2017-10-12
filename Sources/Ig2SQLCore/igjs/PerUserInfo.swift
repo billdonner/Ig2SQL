@@ -161,8 +161,4 @@ class  PerUserInfo {
         // self.apiBuckets.apicount(1)
         globalBuckets.apicount(1)
     }
-    
-    
-    
-    
 }
