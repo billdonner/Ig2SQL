@@ -12,7 +12,7 @@ public enum ReportKind {
     case heartless
     case topposts
     
-   public static  func freport(s:String) -> ReportKind?  {
+   public static  func make(s:String) -> ReportKind?  {
         return rk.findreport(s)
         
     }

@@ -81,7 +81,7 @@ public struct CommandHandler {
         args.userID = String(argv[2].dropFirst(2))
         guard argv[3].hasPrefix("-r") else { return badform() }
         
-        guard let rpt =  ReportKind.freport(s:String(argv[3].dropFirst(2)))
+        guard let rpt =  ReportKind.make(s:String(argv[3].dropFirst(2)))
             else { return badform() }
         args.reportName = rpt
         return args;// -dModelPath -xExportTopFolderPath

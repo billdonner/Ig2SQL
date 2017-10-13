@@ -41,9 +41,9 @@ func bootKitura() {
         request, response, next in
         if let id = request.parameters["id"],
             let name = request.parameters["name"],
-            let reportKind = ReportKind.freport(s: name){
-         generateResponse(id: id,kind:reportKind, qparams: request.queryParameters) { wrappedresponse in
-            //let reportData = responseModel.reportData
+            let reportKind = ReportKind.make(s: name) {
+            // make report, call closure when finished
+         generateResponse(id: id,kind:reportKind, qparams: request.queryParameters) { wrappedresponse in 
             let jsondata = try! Config.jsonEncoder.encode(wrappedresponse)
             response.status(.OK).send(data: jsondata)
         }
