@@ -21,44 +21,65 @@ public enum ReportKind {
         let xx:[String:ReportKind]  = ["samples":.samples,"heartless":.heartless,"topposts":.topposts]
         return xx[s]
     }
-    func anyreport(_ userid:String,name:ReportKind){
+    typealias ReportCallback = (([String], [[String]],TimeInterval)->Void)
+    
+    func anyreport(_ userid:String,name:ReportKind, callback:ReportCallback) ->  Bool  {
+     
         do {
             
             print("\n\n")
             
         switch name {
         case .samples:
-            try samplesReport(userid)
+            try  samplesReport(userid,callback:callback)
         case .heartless:
-            try heartlessReport(userid)
+            try  heartlessReport(userid,callback:callback)
         case .topposts:
-            try toppostsReport(userid)
+            try  toppostsReport(userid,callback:callback)
         }
         }
         catch {
             print("problem generating \(name) for \(userid)")
+            return  false
         }
-        
+        return  true
     }
     
-    func rep (stmnt:String,tag:String) throws {
-        
-      
+    // run the report and copy out the results, call the callback
+    func rep (stmnt:String,tag:String,  callback:ReportCallback ) throws {
+        let st = Date()
+         var repheader:[String] = []
+        var repdata : [[String]] = []
         var first = true
         try iselectfrom( stmnt, args: [ ]) { rows in
+        
             for ff in rows {
+                var line:[String] = []
                 if first {
-                    print("REPORT:")
-                    print ("\(tag) \(ff.map{$0.key})")
+                    print("REPORT: \(tag) ")
+                    print ("  fields: \(ff.map{$0.key})")
+                    for f in ff {
+                        repheader.append("\(f.0)")
+                    }
                     print("RESULTS:")
                 }
-                print ("   \(ff.map{$1})")
+                let ny = "\(ff.map{$1})"
+                print (" ",ny)
+                for f in ff {
+                line.append("\(f.1)")
+                }
+                repdata.append(line)
                 first = false
             }
+            
+            let elapsed = Date().timeIntervalSince(st)*1000
+            callback(repheader,repdata,elapsed)
+            let x = String(format:"%0.2f",elapsed)
+            print("  \(x)ms READY> ")
         }
     }//rep
 
-    private func samplesReport(_ userid:String ) throws {
+    private func samplesReport(_ userid:String , callback:ReportCallback) throws  {
        
         func printrowsOfTable(_ table:String,args:[Any],limit:Int = 10 ) throws {
             var first = true
@@ -99,7 +120,7 @@ public enum ReportKind {
 }
 extension ReportKind {
     
-    fileprivate func toppostsReport(_ userid:String ) throws {
+    fileprivate func toppostsReport(_ userid:String  , callback:ReportCallback) throws   {
         let stmnt = """
 SELECT mediaid  post_that_is_liked,
           userid   userid_of_liker ,
@@ -111,10 +132,10 @@ SELECT mediaid  post_that_is_liked,
           liker_count DESC
 """
         let tag = "top posts"
-        try rep(stmnt:stmnt,tag:tag)
+        return try rep(stmnt:stmnt,tag:tag , callback:callback )
         
     }
-    fileprivate func heartlessReport(_ userid:String ) throws {
+    fileprivate func heartlessReport(_ userid:String, callback:ReportCallback ) throws  {
         let stmnt = """
 -- following not followers
 -- SELECT 'CREATING IIGNOTER -  FOLLOWINGS NOT IN FOLLOWERS' AS 'FAN-ONLYS';
@@ -126,6 +147,6 @@ SELECT mediaid  post_that_is_liked,
          WHERE  followerblocks.userid IS NULL);
 """
         let tag = "heart less"
-        try rep(stmnt:stmnt,tag:tag)
+        return try rep(stmnt:stmnt,tag:tag, callback:callback )
     }
 }

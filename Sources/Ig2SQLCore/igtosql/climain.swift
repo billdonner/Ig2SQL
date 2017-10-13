@@ -30,7 +30,9 @@ public func cliMain(_ argcv:Argstuff) {
     switch argcv.doop {
         
     case .report:
-        rk.anyreport(argcv.userID,name:argcv.reportName )
+        let _ =  rk.anyreport(argcv.userID,name:argcv.reportName ) { headers, data, elapsed  in
+            
+        }
         exit(0)
         
     case .status:
