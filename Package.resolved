@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/IBM-Swift/Kitura-net.git",
         "state": {
           "branch": null,
-          "revision": "5b1b9b2463633f43f0e9fcee74c8360d6feb8d81",
-          "version": "1.7.16"
+          "revision": "52a9abcfff164524fcce806cc28634c38a141bcc",
+          "version": "1.7.17"
         }
       },
       {
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/IBM-Swift/BlueSSLService.git",
         "state": {
           "branch": null,
-          "revision": "1e69d878a34e5889b506baa8f349b6444edb0449",
-          "version": "0.12.61"
+          "revision": "40e5da2ce74a50faeebd45e2dcf83972b6718623",
+          "version": "0.12.62"
         }
       },
       {

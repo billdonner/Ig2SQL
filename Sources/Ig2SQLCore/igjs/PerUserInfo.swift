@@ -32,7 +32,9 @@ public struct CommandHandler {
         switch argv[1]   {
             
         case "status": args.doop = .status; return args;
-        case "kitura": args.doop = .bootkitura; return args;
+        case "kitura": args.doop = .reportService; return args;
+            
+        case "loginsrv": args.doop = .loginService; return args;
         case "once"   : args.doop = .once;
         guard argCount > 3 else {  return badform() }
         guard argv[2].hasPrefix("-d") else { return badform() }
@@ -99,7 +101,8 @@ public enum Doop  {
     case force // [-force]
     case export // -dModelPath -xExportTopFolderPath
     case report // UIDfor NameofReport
-    case bootkitura
+    case reportService
+    case loginService
 }
 // parse command line, return anything anyone might want in a single  struct
 public struct Argstuff {
@@ -113,8 +116,7 @@ public struct Argstuff {
     public var doop: Doop = .status
     public  var userID: String = ""
     public var reportName: ReportKind = .samples
-    public  var bootKitura = false
-    
+
     public init() {
         
     }

@@ -39,7 +39,12 @@ extension Instagramm {
         
         case selfmediarecent(String,String,String)
         case mediarecent(String, String)
+        case mediaRecentAboveMin(String,String,String )//token,min_id,max_id
+        case mediaRecentBelowMax(String,String,String )//token,min_id,max_id
+        case mediaRecentInRange(String,String,String,String)//token,min_id,max_id
         
+        case taginfo(String,String)
+        case tagrecent(String,String)
         case requestOauthCode
         
         static func getAccessTokenRequest (_ code:String) ->  NSMutableURLRequest? {
@@ -134,6 +139,35 @@ extension Instagramm {
                     let params = ["access_token": accessToken]
                     let pathString = "/v1/users/" + userID + "/media/recent"
                     return (pathString, params as [String : AnyObject])
+                    
+                    
+                case .mediaRecentAboveMin ( _ , let accessToken, let minID  ):
+                    let userID = "self"
+                    let pathString = "/v1/users/" + userID + "/media/recent"
+                    return (pathString, ["access_token": accessToken  ,"min_id":minID    ] as [String : AnyObject])
+                    
+                case .mediaRecentBelowMax ( _ , let accessToken, let maxID ):
+                    let userID = "self"
+                    let pathString = "/v1/users/" + userID + "/media/recent"
+                    return (pathString, ["access_token": accessToken  , "max_id":maxID    ] as [String : AnyObject])
+                    
+                case .mediaRecentInRange ( _ , let accessToken, let minID, let maxID ):
+                    let userID = "self"
+                    let pathString = "/v1/users/" + userID + "/media/recent"
+                    return (pathString, ["access_token": accessToken  ,"min_id":minID  ,"max_id":maxID    ] as [String : AnyObject])
+                    
+                    
+                case .taginfo( let tagName  , let accessToken  ):
+                    
+                    let pathString = "/v1/tags/" + tagName
+                    return (pathString, ["access_token": accessToken    ] as [String : AnyObject])
+                    
+                    
+                case .tagrecent( let tagName  , let accessToken  ):
+                    
+                    let pathString = "/v1/tags/" + tagName  + "/media/recent"
+                    return (pathString, ["access_token": accessToken    ] as [String : AnyObject])
+                    
                     
                 case .requestOauthCode:
                     let params = ["client_id": Router.clientID,

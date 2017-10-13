@@ -8,13 +8,22 @@
 
 import Foundation
  import  MySQLDriver
+  import Kitura
+   import Health
+
 struct Config {
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
     static  let jsonDecoder = JSONDecoder()
     static  let jsonEncoder = JSONEncoder()
+    
+    static let report_port   = 8080
 }
 
+//public  var reportServiceIsBooted = false
+//public  var loginServiceIsBooted = false
+
+var   health = Health()
 
 var rk : ReportKind  = .samples
 
@@ -112,8 +121,15 @@ public func cliMain(_ argcv:Argstuff) {
             thebm.perpetualCycle(apiCycle: apicycl, repeating: { tag,status  in
             } )
         }
-    case .bootkitura:
-        print("entering bootkitura")
-        bootKitura()
+    case .reportService:
+        bootReportWebService()
+        // Start the Kitura runloop (this call never returns)
+        Kitura.run()
+        
+    case .loginService:
+        print("entering bootLoginWebService")
+       // bootReportWebService()
+        // Start the Kitura runloop (this call never returns)
+        //Kitura.run()
     }
 }//theMain

@@ -32,6 +32,6 @@ let package = Package(
             dependencies: ["Ig2SQLCore"]
         ),
         .target(name: "Ig2SQLCore",
-                dependencies: ["Kitura","Health"])//,"FLogger"])
+                dependencies: ["Kitura","Health","HeliumLogger"])
     ]
 )
