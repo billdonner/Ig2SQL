@@ -11,12 +11,12 @@ public enum APIFlow {
     case debug
 }
 class APICycle {
- private      let bm : InstagramPoller
-  private     let flow: APIFlow
- private      let uid: String = ""
-       var main : ((@escaping UseridStatusCompletionHandler)->())?
-  private   var mkeys : [String] = []
-
+    private      let bm : InstagramPoller
+    private     let flow: APIFlow
+    private      let uid: String = ""
+    var main : ((@escaping UseridStatusCompletionHandler)->())?
+    private   var mkeys : [String] = []
+    
     
     init(flow:APIFlow,  bm:InstagramPoller) {
         self.bm = bm
@@ -28,21 +28,21 @@ class APICycle {
             self.main = dummyCycle1(_:)
         }
     }
-
-    func dummyCycle1 (  _ finally:@escaping UseridStatusCompletionHandler) {
     
+    func dummyCycle1 (  _ finally:@escaping UseridStatusCompletionHandler) {
+        
         dbgprint("***** - \(uid)  starting dummycycle1 ")
-   
+        
         // work goes here, but for dummy lets just delay a bit to simulate api call
-       // bm.delay(0.1) {
-            self.bm.apiCountUp()
-                dbgprint("***** - \(self.uid) finished dummycycle1")
-            self.dummyCycle2(finally)
-       // }
+        // bm.delay(0.1) {
+        self.bm.apiCountUp()
+        dbgprint("***** - \(self.uid) finished dummycycle1")
+        self.dummyCycle2(finally)
+        // }
     }
     
     func dummyCycle2 (   _ finally:@escaping UseridStatusCompletionHandler) {
-       
+        
         dbgprint("***** - \(uid) starting dummycycle2")
         bm.delay(0.2) {
             self.bm.apiCountUp()
@@ -50,7 +50,7 @@ class APICycle {
             let st  = randomNum > 50 ? 200 : 429
             dbgprint("***** - \(self.uid) finished dummycycle2 AND NOW Completing finally")
             self.bm.bitterend(st,finally)
-      
+            
         }
     }
     
@@ -61,7 +61,7 @@ class APICycle {
             let mkeya = mkeys.last ,
             let media = bm.model.mediadata[mkeya] {
             mkeys.removeLast(1) // shrink for next go
- 
+            
             // 7
             // now get the "who likes list for each piece of media here
             bm.apiCountUp()
@@ -110,9 +110,9 @@ class APICycle {
         }//fif let last
         else {
             // nothing left in mediakeys, so we are finally done
-          
-           // let randomNum:UInt32 = arc4random_uniform(100) // range is 0 to 99
-           // let st  = randomNum > 50 ? 200 : 407
+            
+            // let randomNum:UInt32 = arc4random_uniform(100) // range is 0 to 99
+            // let st  = randomNum > 50 ? 200 : 407
             let st = 200
             //dbgprint("- \(uid) finished feelingscycle \(st)")
             self.bm.bitterend(st, finally)
@@ -147,8 +147,8 @@ class APICycle {
                         Instagramm.getSelfLikedRecent( ) { status,   rawlikes,likes    in
                             guard let likes = likes, status == 200 else { self.bm.bitterend(status, finally); return}
                             self.bm.model.likesdata =
-                                 Instagramm.mergeUserBlocks(a: self.bm.model.likesdata, b:likes.data)
-                                //elf.bm.model.likesdata.union(likes.data)
+                                Instagramm.mergeUserBlocks(a: self.bm.model.likesdata, b:likes.data)
+                            //elf.bm.model.likesdata.union(likes.data)
                             // 6
                             self.bm.apiCountUp()
                             /// we want to get to old media as well as what it gives us
@@ -170,8 +170,8 @@ class APICycle {
                                 self.bm.delay(0.0001) {
                                     // build an array of keys we can messwith thru many calls to the feelings cycle until they've all been handled
                                     
-                                self.mkeys = self.bm.model.mediadata.map() {k,v in return k}
-                                self.feelingsCycle(finally)
+                                    self.mkeys = self.bm.model.mediadata.map() {k,v in return k}
+                                    self.feelingsCycle(finally)
                                 }
                             }
                         }
