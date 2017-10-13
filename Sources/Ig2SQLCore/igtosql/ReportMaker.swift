@@ -51,7 +51,7 @@ public enum ReportKind:String {
          var repheader:[String] = []
         var repdata : [[String]] = []
         var first = true
-        try iselectfrom( stmnt, args: [ ]) { rows in
+        try zh.iselectfrom( stmnt, args: [ ]) { rows in
         
             for ff in rows {
                 var line:[String] = []
@@ -83,7 +83,7 @@ public enum ReportKind:String {
        
         func printrowsOfTable(_ table:String,args:[Any],limit:Int = 10 ) throws {
             var first = true
-            try iselectfrom(  "SELECT * FROM \(table) LIMIT \(limit)", args: args) { rows in
+            try zh.iselectfrom(  "SELECT * FROM \(table) LIMIT \(limit)", args: args) { rows in
                 for ff in rows {
                     if first {
                         print ("Table - \(table) \(ff.map{$0.key})")

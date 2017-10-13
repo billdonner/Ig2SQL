@@ -10,7 +10,7 @@ import Foundation
     
     func dose(_ s:String,_ args:[Any]) {
         do {
-            try iselectfrom(s,args: []) {_ in 
+            try zh.iselectfrom(s,args: []) {_ in 
                 
             }// pass empty arglist for now
         }
@@ -35,20 +35,20 @@ import Foundation
 
 func insertallTest( ) {
     
-    likesdatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:UInt64(234234), iguserid: "12312", created_time: "1234")
+    zh.likesdatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:UInt64(234234), iguserid: "12312", created_time: "1234")
     
     
-    mediadatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:  UInt64(234234) , iguserid: "12312", created_time: "1234")
+    zh.mediadatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:  UInt64(234234) , iguserid: "12312", created_time: "1234")
     
-    likersofmediaInsert(mediaid: "3Bfas",userid:  "192839",iguserid: "12312")
-    commentsofmediaInsert(mediaid: "3Bfas", comment: "oerfecti:", userid:  "192839" , created_time: "000", iguserid: "12312")
-    mediaTaggedInsert(mediaid: "3Bfas",tag:"FOOTAG", iguserid:  "12312")
-    mediaVideosInsert(mediaid: "3Bfas", url: "http://vidblah", width: 300, height: 200, iguserid:  "12312")
-    mediaImagesInsert(mediaid: "3BXZ5", url: "http://blah", width: 300, height: 200, iguserid:  "12312")
-    userblocksInsert(userid: "192839", username: "bdonner", full_name: "bill donner", profile_picture: "http:billdnner,con", iguserid:  "12312")
-    iguserInsert(bio:"go away",  username: "bdonner", full_name: "bill donner", profile_picture: "http:billdonner.com", website:"http://billdonner.com", iguserid:  "12312")
-    followingblocksInsert(userid:"192839", iguserid: "12312")
-    followerblocksInsert(userid:"192839", iguserid: "12312")
-    requestedbyblocksInsert(userid:"192839", iguserid: "12312")
+    zh.likersofmediaInsert(mediaid: "3Bfas",userid:  "192839",iguserid: "12312")
+    zh.commentsofmediaInsert(mediaid: "3Bfas", comment: "oerfecti:", userid:  "192839" , created_time: "000", iguserid: "12312")
+    zh.mediaTaggedInsert(mediaid: "3Bfas",tag:"FOOTAG", iguserid:  "12312")
+    zh.mediaVideosInsert(mediaid: "3Bfas", url: "http://vidblah", width: 300, height: 200, iguserid:  "12312")
+    zh.mediaImagesInsert(mediaid: "3BXZ5", url: "http://blah", width: 300, height: 200, iguserid:  "12312")
+    zh.userblocksInsert(userid: "192839", username: "bdonner", full_name: "bill donner", profile_picture: "http:billdnner,con", iguserid:  "12312")
+    zh.iguserInsert(bio:"go away",  username: "bdonner", full_name: "bill donner", profile_picture: "http:billdonner.com", website:"http://billdonner.com", iguserid:  "12312")
+    zh.followingblocksInsert(userid:"192839", iguserid: "12312")
+    zh.followerblocksInsert(userid:"192839", iguserid: "12312")
+    zh.requestedbyblocksInsert(userid:"192839", iguserid: "12312")
     
 }

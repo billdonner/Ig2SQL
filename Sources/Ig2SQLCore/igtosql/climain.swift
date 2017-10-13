@@ -7,6 +7,7 @@
 //
 
 import Foundation
+ import  MySQLDriver
 struct Config {
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
@@ -19,13 +20,13 @@ var rk : ReportKind  = .samples
 
 var igPoller : InstagramPoller?
 
-let con = MySQL.Connection()
+var zh = ZH() 
 
 public func cliMain(_ argcv:Argstuff) {
     
     // processed args passed in
     
-    try! openigbase()
+    try! zh.openigbase()
     
     switch argcv.doop {
         
@@ -41,12 +42,12 @@ public func cliMain(_ argcv:Argstuff) {
         exit(0)
         
     case .create:
-        createallTables()
+        zh.createallTables()
         exit(0)
         
     case .force:
-        try! freshdb(Config.dbname)
-        createallTables()
+        try! zh.freshdb(Config.dbname)
+        zh.createallTables()
         exit(0)
         
     case .export:

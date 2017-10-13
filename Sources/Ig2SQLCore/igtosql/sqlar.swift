@@ -7,7 +7,9 @@
 //
 
 import Foundation
-struct BitsOfMySQL {
+import MySQLDriver
+public struct BitsOfMySQL {
+    
     /*"proto":(
      """
      create
@@ -233,29 +235,35 @@ fileprivate func dump () {
     
     print("-------------------------------------------")
 }
-func openigbase() throws {
+
+
+public struct ZH {
+    
+    let con = MySQL.Connection()
+    
+public func openigbase() throws {
     // open a new connection
     try  con.open("localhost", user: "root", passwd: "")
     try  conuse(Config.dbname)
 }
-func createigbase() throws {
+public func createigbase() throws {
     // open a new connection
     try openigbase()
     createallTables()
 }
-func conuse(_ s:String) throws {
+public func conuse(_ s:String) throws {
     //print("u:" + s)
     try con.use(s)
 }
-func conexec(_ s:String) throws {
+public func conexec(_ s:String) throws {
     //print("x:" + s)
     try con.exec(s)
 }
-func conprepare(_ s:String) throws -> MySQL.Statement {
+public func conprepare(_ s:String) throws -> MySQL.Statement {
     //print("p:" + s)
     return try con.prepare(s)
 }
-func freshdb(_ db_name:String) throws {
+public func freshdb(_ db_name:String) throws {
     // create a new database for tests, use exec since we don't expect any results
     try conexec("DROP DATABASE IF EXISTS " + db_name)
     try conexec("CREATE DATABASE IF NOT EXISTS " + db_name)
@@ -263,7 +271,7 @@ func freshdb(_ db_name:String) throws {
     // select the database
     try conuse(db_name)
 }
-func opendb(_ db_name:String) throws {
+public func opendb(_ db_name:String) throws {
     print("----------OPENDB----\(db_name)-----------------------")
     // select the database
     try conuse(db_name)
@@ -281,10 +289,10 @@ private func insertinto(_ table:String,args:[Any]) throws {
         let a = try conprepare(s)
         //print("a:" + "\(s)")
         try a.exec(args) 
-        assert ( con.affectedRows == 1)
+       // assert ( con.affectedRows == 1)
     }
 }
-func printcounts(_ table:String,args:[Any]) throws {
+public func printcounts(_ table:String,args:[Any]) throws {
     
     try iselectfrom("select count(*)from \(table)", args: args) { row in
         let r = row[0]
@@ -293,7 +301,7 @@ func printcounts(_ table:String,args:[Any]) throws {
     }
 }
 
-func iselectfrom(_  s:String,args:[Any],each:(MySQL.ResultSet)->()) throws {
+public func iselectfrom(_  s:String,args:[Any],each:(MySQL.ResultSet)->()) throws {
     
         let a = try con.prepare(s)
         do {
@@ -462,5 +470,5 @@ func requestedbyblocksInsert(userid a:String,iguserid b:String) {
     }
 }
 
-
+}// end ZH
 

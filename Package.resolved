@@ -47,6 +47,15 @@
         }
       },
       {
+        "package": "MySQLDriver",
+        "repositoryURL": "https://github.com/mcorega/MySqlSwiftNative",
+        "state": {
+          "branch": null,
+          "revision": "c0e37ac071eef248b6e1b4c6592a1073726ac744",
+          "version": "1.3.1"
+        }
+      },
+      {
         "package": "SSLService",
         "repositoryURL": "https://github.com/IBM-Swift/BlueSSLService.git",
         "state": {
