@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum ReportKind {
+public enum ReportKind:String {
     case samples
     case heartless
     case topposts
