@@ -56,6 +56,15 @@
         }
       },
       {
+        "package": "KituraRequest",
+        "repositoryURL": "https://github.com/IBM-Swift/Kitura-Request.git",
+        "state": {
+          "branch": null,
+          "revision": "0330cb176e02c7690b4e6445e560647513305ac9",
+          "version": "0.8.2"
+        }
+      },
+      {
         "package": "LoggerAPI",
         "repositoryURL": "https://github.com/IBM-Swift/LoggerAPI.git",
         "state": {

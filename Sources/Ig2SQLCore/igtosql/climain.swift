@@ -6,10 +6,17 @@
 //  Copyright © 2017 midnightrambler. All rights reserved.
 //
 
+
+////
+///
+/// TODO: MySQLDriver has been copied in and should be used as package - fix or wait?
+/// TODO: Cant enable KituraSession because swift package update hangs with BlueCryptor
 import Foundation
- import  MySQLDriver
-  import Kitura
-   import Health
+/// import  MySQLDriver
+import Kitura
+import Health
+import HeliumLogger
+import LoggerAPI
 
 struct Config {
     static let maxMediaCount = 6 // is ignored in sandbox anyway
@@ -18,18 +25,25 @@ struct Config {
     static  let jsonEncoder = JSONEncoder()
     
     static let report_port   = 8080
+    static let login_port = 8090
+    
 }
 
-//public  var reportServiceIsBooted = false
-//public  var loginServiceIsBooted = false
+public  var reportServiceIsBooted = false
+public  var loginServiceIsBooted = false
 
-var   health = Health()
+var serverip : String = ""
+
+var health = Health()
 
 var rk : ReportKind  = .samples
 
 var igPoller : InstagramPoller?
 
-var zh = ZH() 
+var zh = ZH()
+
+var lc : LoginController?
+
 
 public func cliMain(_ argcv:Argstuff) {
     
@@ -122,14 +136,25 @@ public func cliMain(_ argcv:Argstuff) {
             } )
         }
     case .reportService:
-        bootReportWebService()
-        // Start the Kitura runloop (this call never returns)
-        Kitura.run()
+        HeliumLogger.use()
+        LoginController.discoverIpAddress() { ip in
+            serverip = ip
+            bootReportWebService()
+            // Start the Kitura runloop (this call never returns)
+            reportServiceIsBooted = true
+            Kitura.run()
+        }
         
     case .loginService:
-        print("entering bootLoginWebService")
-       // bootReportWebService()
-        // Start the Kitura runloop (this call never returns)
-        //Kitura.run()
+        HeliumLogger.use()
+
+        LoginController.discoverIpAddress() { ip in
+            serverip = ip
+            bootLoginWebService()
+            // Start the Kitura runloop (this call never returns)
+            loginServiceIsBooted = true
+            Kitura.run()
+        }
+        
     }
 }//theMain

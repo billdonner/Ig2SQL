@@ -18,9 +18,10 @@ import PackageDescription
 let package = Package(
     name: "Ig2SQL",
     dependencies: [
-      .package(url: "https://github.com/IBM-Swift/Kitura.git", from: "1.0.0"),
-        .package(url: "https://github.com/IBM-Swift/Health.git",  from: "0.0.0"),
-        .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.0.0")
+     .package(url: "https://github.com/IBM-Swift/Kitura.git", from: "1.0.0"),
+    .package(url: "https://github.com/IBM-Swift/Kitura-Request.git", from: "0.0.0"),
+   .package(url: "https://github.com/IBM-Swift/Health.git",  from: "0.0.1"), // drags in logger
+         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.0.0")
     ],
     targets: [
         .testTarget(
@@ -32,6 +33,6 @@ let package = Package(
             dependencies: ["Ig2SQLCore"]
         ),
         .target(name: "Ig2SQLCore",
-                dependencies: ["Kitura","Health","HeliumLogger"])
+                dependencies: ["Kitura","KituraRequest","Health","HeliumLogger"])
     ]
 )

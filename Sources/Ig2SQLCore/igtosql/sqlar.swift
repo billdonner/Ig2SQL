@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import MySQLDriver
+
 public struct BitsOfMySQL {
     
     /*"proto":(
