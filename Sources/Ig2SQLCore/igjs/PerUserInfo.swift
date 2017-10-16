@@ -11,14 +11,15 @@ import Foundation
 public struct CommandHandler {
     
     private static func badform() -> Argstuff? {
-        print("ig4sql  export  -dModelPath -xExportTopFolderPath // no db needed, generates mysql import file");
-        print("ig4sql  create  // makes tables,unless they already exists");
-        print("ig4sql  force   // makes tables, drops them first");
-        print("ig4sql  poller  -dModelTopFolderPath -uUserCredsFilePath  [-c=600] [ -insert=1] // default is to insert records");
-        print("ig4sql  once    -dModelTopFolderPath  -uUserCredsFilePath [ -insert=1] // default is to insert records repeatedly");
-        print("ig4sql  status");
-        print("ig4sql  report   -iUIDfor -rNameofReport");
-        print("ig4sql  kitura");
+        print("Ig2SQL  export  -dModelPath -xExportTopFolderPath // no db needed, generates mysql import file");
+        print("Ig2SQL  create  // makes tables,unless they already exists");
+        print("Ig2SQL  force   // makes tables, drops them first");
+        print("Ig2SQL  poller  -dModelTopFolderPath -uUserCredsFilePath  [-c=600] [ -insert=1] // default is to insert records");
+        print("Ig2SQL  once    -dModelTopFolderPath  -uUserCredsFilePath [ -insert=1] // default is to insert records repeatedly");
+        print("Ig2SQL  status");
+        print("Ig2SQL  report   -iUIDfor -rNameofReport");
+        print("Ig2SQL  reportsrv // kitura starts on 8090");
+        print("Ig2SQL  loginsrv // kitura starts on 8080");
         return nil
     }
     
@@ -32,7 +33,7 @@ public struct CommandHandler {
         switch argv[1]   {
             
         case "status": args.doop = .status; return args;
-        case "kitura": args.doop = .reportService; return args;
+        case "reportsrv": args.doop = .reportService; return args;
             
         case "loginsrv": args.doop = .loginService; return args;
         case "once"   : args.doop = .once;

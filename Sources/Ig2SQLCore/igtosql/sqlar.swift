@@ -19,7 +19,20 @@ public struct BitsOfMySQL {
      ),*/
     static let eachrow:[String:(String,String)] =
         [
-            "mediadatablocks":(
+            "smaxxusers":(
+                """
+CREATE TABLE smaxxusers (
+igtoken   VARCHAR (255),
+iguserid   VARCHAR (255),
+name   VARCHAR (255),
+pic   VARCHAR (255),
+smaxxtoken INT PRIMARY KEY
+);
+""",
+                "INSERT INTO smaxxusers (igtoken,iguserid,name,pic,smaxxtoken ) VALUES(?,?,?,?,?)"
+ ),
+
+  "mediadatablocks":(
                 """
 CREATE TABLE mediadatablocks
   (
@@ -325,6 +338,45 @@ public func iselectfrom(_  s:String,args:[Any],each:(MySQL.ResultSet)->()) throw
         }
    // }
 }
+    enum CredentialsError: Error {
+        case smaxxnotfound
+    }
+    func isLoggedIn(smaxxtoken:Int,atend:@escaping (Bool)->()){
+        var success = false
+        do {
+            try iselectfrom("select * from smaxxusers where smaxxtoken=?", args: [smaxxtoken]) { _ in
+                success = true
+            }
+        }
+        catch {  }
+        atend(success)
+    }
+    
+    func getLoginCredentials(smaxxtoken:Int,atend:(Bool, String,String,String,String,String)->()){
+        var p = "p", q = "q", r = "r", s = "s", t = "t"
+        var isin = false
+        do {
+        try iselectfrom("select * from smaxxusers where smaxxtoken=? limit 1 ", args: [smaxxtoken]) { row in
+            let a:[String:Any] = row [0]
+             p = a["igtoken"] as? String ?? ""
+             q = a["name"] as? String ?? ""
+             r = a["pic"] as? String ?? ""
+             s = a["iguserid"] as? String ?? ""
+             t = a["smaxxtoken"] as? String ?? ""
+        
+            isin = true
+            print("from select \(smaxxtoken) >>>>>>>>>>>>>", row)
+            
+            }
+        }
+            catch {
+            }
+          atend(isin, p,q,r,s,t)
+    }
+    func setLoginCredentials(smaxxtoken:Int,igtoken:String,iguserid:String,name:String,pic:String) throws {
+        let vals = [igtoken,iguserid,name,pic,smaxxtoken] as [Any]
+        try insertinto("smaxxusers",args: vals)
+    }
 func createallTables() {
     BitsOfMySQL.eachrow.forEach({ (table,_) in
         do {

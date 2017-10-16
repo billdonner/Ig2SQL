@@ -11,6 +11,13 @@ import Kitura
 import KituraRequest
 import LoggerAPI
 
+struct SmaxxResponse: Codable {
+    let status: Int
+    let igid: String
+    let pic:String
+    let smaxxtoken: Int
+    let name:String
+}
 struct LoginResponse:Codable {
     let userid:String
     let reportname:String
@@ -40,7 +47,7 @@ func bootLoginWebService() {
     // Handle HTTP GET requests to /
     // Serve static content from "public"
     router.all("/", middleware: StaticFileServer())
-
+    
     // JSON Get request
     router.get("/json") {
         request, response, next in
@@ -54,7 +61,7 @@ func bootLoginWebService() {
         jsonResponse["location"] = "New York, NY"
         let jsondata = try  Config.jsonEncoder.encode(jsonResponse)
         try response.status(.OK).send(data: jsondata).end()
-            next()
+        next()
     }
     
     // Basic application health check
@@ -67,7 +74,7 @@ func bootLoginWebService() {
         } else {
             try response.status(.serviceUnavailable).send(json: result).end()
         }
-            next()
+        next()
     }
     
     router.get("/log") { request, response, next in
@@ -84,35 +91,35 @@ func bootLoginWebService() {
         lc.globalData.apic.getIn += 1
     }
     
-    /// this path allows other servers to obtain the instagram goodies so they can make instagram callls instead of us
-    /// TODO: - add more security possibly even dhecking ip addresses against a whitelist
-    
-    router.get("/igtoken/:userid") {   request, response, next in
-        
-        // -- standard api token userid validation
-        guard let lc = lc else { return }
-        guard lc.fullyInitialized else { lc.sendCallAgainSoon(response); return }
-        guard let smtoken = request.queryParameters["smtoken"] else { return  lc.missingID(response) }
-        guard let loggedOnData = lc.globalData.usersLoggedOn[smtoken]  else {  return  lc.missingID(response)  }
-        guard let userid = loggedOnData["userid"],let uid = request.parameters["userid"], uid == userid else { return  lc.missingID(response)  }
-        // -- end standard verification
-        guard let token = loggedOnData["token"] else { return  lc.missingID(response)  }
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-        var json  :[String:Any] = ["status":200 ,"ig-token":token,"ig-userid":userid]
-        json ["timenow"]  = "\(Date())"
-        let jsonResponse = try  Config.jsonEncoder.encode(json)
-        try response.status(.OK).send(data: jsonResponse).end() 
-        
-        lc.globalData.apic.getIn += 1
-        
-    }
+    //    /// this path allows other servers to obtain the instagram goodies so they can make instagram callls instead of us
+    //    /// TODO: - add more security possibly even dhecking ip addresses against a whitelist
+    //
+    //    router.get("/igtoken/:userid") {   request, response, next in
+    //
+    //        // -- standard api token userid validation
+    //        guard let lc = lc else { return }
+    //        guard lc.fullyInitialized else { lc.sendCallAgainSoon(response); return }
+    //        guard let smtoken = Int(request.queryParameters["smtoken"]!) else { return  lc.missingID(response) }
+    //        guard let loggedOnD  = lc.globalData.usersLoggedOn[smtoken]  else {  return  lc.missingID(response)  }
+    //        guard let loggedOnData = loggedOnD , let userid = loggedOnData["userid"], let uid = request.parameters["userid"], uid == userid else { return  lc.missingID(response)  }
+    //        // -- end standard verification
+    //        guard let token = loggedOnData["token"] else { return  lc.missingID(response)  }
+    //        response.headers["Content-Type"] = "application/json; charset=utf-8"
+    //        var json  :[String:Any] = ["status":200 ,"ig-token":token,"ig-userid":userid]
+    //        json ["timenow"]  = "\(Date())"
+    //        let jsonResponse = try  Config.jsonEncoder.encode(json)
+    //        try response.status(.OK).send(data: jsonResponse).end()
+    //
+    //        lc.globalData.apic.getIn += 1
+    //
+    //    }
     
     // MARK: Callback GETs and POSTs from IG come here
     ///
     router.get("/logout")  { request, response, next in
         
         guard let lc = lc else { return }
-        guard let smtoken = request.queryParameters["smtoken"] else {
+        guard let smtoken = Int(request.queryParameters["smtoken"]!) else {
             return  lc.missingID(response)
         }
         let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
@@ -130,13 +137,34 @@ func bootLoginWebService() {
     router.get("/showlogin")  { request, response, next in
         
         guard let lc = lc else { return }
-        lc.globalData.apic.getIn += 1
-        
-        lc.STEP_ONE(response) // will redirect to IG
-        
-        //next()
-    }
+        guard let smtokenstr =  request.queryParameters["smtoken"] else {
+            return  lc.missingID(response)
+        }
+        if let smtoken = Int(smtokenstr) {
+            zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, p,q,r,s,t in
+                //print("getlogin p\(p) q\(q) r\(r) s\(s) t\(t)")
+                if isloggedon {
+                     
+                    response.headers["Content-Type"] = "application/json; charset=utf-8"
+                    let jsonResponse = SmaxxResponse(status: 203, igid: s, pic: r, smaxxtoken: smtoken, name: q)
+                    let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
+                    try! response.status(.OK).send(data: jsondata).end()
+                    next()
+                    return
+                }
+                else
+                {
+                    // not logged on, so go to step one
+                    
+                    lc.globalData.apic.getIn += 1
+                    lc.STEP_ONE(response) // will redirect to IG
+                }
+            })
+        } else { // ill-formed smtoken
+         return  lc.missingID(response)
+        }
     
+    }
     
     router.get("/authcallback" ) { request, response, next in
         
@@ -150,20 +178,17 @@ func bootLoginWebService() {
     }
     router.get("/unwindor" ) { request, response, next in
         
-        guard let lc = lc else { return }
+        // guard let lc = lc else { return }
         // just a means of unwinding after login , with data passed via queryparam
-        lc.STEP_THREE (request, response: response )
+        
         do {
-            let id = request.queryParameters["smaxx-id"] ?? "no id"
-            let smtoken = request.queryParameters["smaxx-token"] ?? "no smtoken"
+            let id = request.queryParameters["userid"] ?? "no id"
+            let smtoken = Int(request.queryParameters["smaxx-token"]!) ?? 0
             let name = request.queryParameters["smaxx-name"] ?? "no smname"
             let pic = request.queryParameters["smaxx-pic"] ?? "no smpic"
-            let dic: [String:String] = [ "smaxx-id":id   , "smaxx-pic":pic   ,"smaxx-token":smtoken   ,"smaxx-name":name   ]
-            
-            response.headers["Content-Type"] = "application/json; charset=utf-8"
-            let jsonResponse = try  Config.jsonEncoder.encode(dic)
+            let dict = SmaxxResponse(status: 201, igid: id, pic: pic, smaxxtoken: smtoken, name: name)
+            let jsonResponse = try  Config.jsonEncoder.encode(dict)
             try response.status(.OK).send(data: jsonResponse).end()
-            
         }
         catch {
             Log.error("Failed /authcallback redirect \(error)")
@@ -197,12 +222,12 @@ func bootLoginWebService() {
         
         //next()
     }
-
+    
     ///
     // MARK:- Handles any errors that get set
     ///
     router.error { request, response, next in
-         
+        
         response.headers["Content-Type"] = "text/plain; charset=utf-8"
         do {
             let errorDescription: String
@@ -242,8 +267,8 @@ func bootLoginWebService() {
     
     Log.error("Smaxx Login Service started on port \(Config.login_port)")
     // Add an HTTP server and connect it to the router
-     let srv = Kitura.addHTTPServer(onPort: Config.login_port, with: router)
-     
+    let srv = Kitura.addHTTPServer(onPort: Config.login_port, with: router)
+    
     
     srv.started {
         //self.controllerIsFullyStarted()
