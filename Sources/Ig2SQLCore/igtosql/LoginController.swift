@@ -43,9 +43,6 @@ import Foundation
 import Kitura
 import KituraNet
 import KituraRequest
-//import Configuration
-//import CloudFoundryEnv
-//import CloudFoundryConfig
 import LoggerAPI
 import Dispatch
 
@@ -185,13 +182,9 @@ public struct Fetch {
         
         func fetchViaContentsOfFile(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {/// makes http request outbund
             do {
-                if
-                    let nurl = URL(string:urlstr) {
-                    
+                if  let nurl = URL(string:urlstr) {
                     let  data =  try Data(contentsOf: nurl)
-                    
-                    completion (200,data)
-                    
+                    completion (200,data) 
                 }
             }
             catch {
@@ -322,53 +315,9 @@ open class LoginController {
     /**
      * Handler for getting an application/json response.
      */
-    public  func finishJSONStatusResponse(_ extra: [String:Any], request: RouterRequest, response: RouterResponse  , status:Int = 200, next: @escaping () -> Void) throws {
-        let now = Date()
-        let uptime = now.timeIntervalSince(startdate)
-        let prettysecs = String(format:"%0.2f",uptime)
-        var out :  [String:Any] = ["server-url":serverip,"response-status":status,"servertitle":loginServiceIsBooted ? "loginsvc":"reportsvc","description":serverConfig.description,"softwareversion":"1.0","elapsed-secs":"\(prettysecs)","up-time":uptime,"timenow":"\(Date())","httpgets":globalData.apic.getIn]
-        
-        for (key,val) in extra {
-            out[key]=val
-        }
-        
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-        let data = try JSONSerialization.data(withJSONObject:out, options:.prettyPrinted )
-        try response.status(.OK).send(data:data).end()
-    }
+
     
-    /// standard error responses -
-    public   func log (request: RouterRequest, response: RouterResponse, next: @escaping () -> Void) throws {
-        let qp = request.queryParameters
-        /// for now - just put all the query paramters into the log
-        Log.info("LOGLINE \(qp)")
-        // prepare payload
-        let out = ["logged":qp ] as [String : Any]
-        // send ack to caller
-        try finishJSONStatusResponse(out, request: request, response: response, next: next)
-        
-    }
-    
-    public  func missingID(_ response:RouterResponse) {
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-        let out:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
-        do {
-            let data = try JSONSerialization.data(withJSONObject:out, options: .prettyPrinted)
-            
-            try response.status(.OK).send(data:data).end() } catch {
-                Log.error("can not send response in missingID")
-        }
-    }
-    public   func unkownOP(_ response:RouterResponse) {
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-        let out:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
-        do {
-            let data = try JSONSerialization.data(withJSONObject:out, options: .prettyPrinted)
-            
-            try response.status(.OK).send(data:data).end() } catch {
-                Log.error("can not send response in missingID")
-        }
-    }
+
     func sendCallAgainSoon(_ response: RouterResponse) {
         response.headers["Content-Type"] = "application/json; charset=utf-8"
         do {
@@ -392,7 +341,7 @@ open class LoginController {
     {
         /// now , finally we c
         
-        guard let what = request.parameters["what"] else { return  self.missingID(response)  }
+        guard let what = request.parameters["what"] else { return   missingID(response)  }
         switch what {
             
         case "json" :

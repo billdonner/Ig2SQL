@@ -120,7 +120,7 @@ func bootLoginWebService() {
         
         guard let lc = lc else { return }
         guard let smtoken = Int(request.queryParameters["smtoken"]!) else {
-            return  lc.missingID(response)
+            return  missingID(response)
         }
         let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
         if loggedOnData != nil {
@@ -138,15 +138,16 @@ func bootLoginWebService() {
         
         guard let lc = lc else { return }
         guard let smtokenstr =  request.queryParameters["smtoken"] else {
-            return  lc.missingID(response)
+            return    missingID(response)
         }
         if let smtoken = Int(smtokenstr) {
-            zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, p,q,r,s,t in
-                //print("getlogin p\(p) q\(q) r\(r) s\(s) t\(t)")
+            // call sql service to read record keyed by 'smtoken'
+            zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+          
                 if isloggedon {
-                     
+                 // if already logged on send back existing record
                     response.headers["Content-Type"] = "application/json; charset=utf-8"
-                    let jsonResponse = SmaxxResponse(status: 203, igid: s, pic: r, smaxxtoken: smtoken, name: q)
+                    let jsonResponse = SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name)
                     let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
                     try! response.status(.OK).send(data: jsondata).end()
                     next()
@@ -161,7 +162,7 @@ func bootLoginWebService() {
                 }
             })
         } else { // ill-formed smtoken
-         return  lc.missingID(response)
+         return   missingID(response)
         }
     
     }
@@ -203,18 +204,18 @@ func bootLoginWebService() {
         guard let lc = lc else { return }
         lc.globalData.apic.getIn += 1
         
-        guard let who = request.parameters["who"] else { return  lc.missingID(response)  }
+        guard let who = request.parameters["who"] else { return   missingID(response)  }
         
         //        guard let token = request.parameters["token"] else { return  missingID(response)  }
         //        guard let rid = request.parameters["id"] else { return  missingID(response)  }
         
         let ix = lc.usersHack[who]
         guard let x = ix else {
-            return  lc.missingID(response)
+            return   missingID(response)
         }
         
         guard let _ = x["userid"], let token = x["apitoken"] else {
-            return  lc.missingID(response)
+            return   missingID(response)
         }
         
         //

@@ -59,7 +59,7 @@ func bootReportWebService() {
         jsonResponse["location"] = "New York, NY"
         let jsondata = try  Config.jsonEncoder.encode(jsonResponse)
         try response.status(.OK).send(data: jsondata).end()
-            next()
+        next()
     }
     
     // Basic application health check
@@ -72,32 +72,50 @@ func bootReportWebService() {
         } else {
             try response.status(.serviceUnavailable).send(json: result).end()
         }
-            next()
+        next()
     }
     
-
+    
     
     router.get("/report/:id/:name/") {
         request, response, next in
+        
+        guard let lc = lc else {
+            print("report id name")
+            return
+        }
         if let id = request.parameters["id"],
             let name = request.parameters["name"],
             let reportKind = ReportKind.make(s: name) {
-            // make report, call closure when finished
-            generateReport(id: id,kind:reportKind, qparams: request.queryParameters) { wrappedresponse in
-                let encoder = Config.jsonEncoder
-                //encoder.dateEncodingStrategy = .iso8601
-                let jsondata = try! encoder.encode(wrappedresponse)
-                response.status(.OK).send(data: jsondata)
+            guard let smtokenstr =  request.queryParameters["smtoken"] else {
+                return   missingID(response)
             }
-            
-            
-        } else {
-            let jsondata = try Config.jsonEncoder.encode(["error":"badrequest"])
-            response.status(.badRequest).send(data: jsondata)
-        }
-        next()
+            if let smtoken = Int(smtokenstr) {
+                // call sql service to read record keyed by 'smtoken'
+                zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+                    if isloggedon {
+                        // if already logged on send back existing record
+                        response.headers["Content-Type"] = "application/json; charset=utf-8"
+                        // make report, call closure when finished
+                        generateReport(id: id,kind:reportKind, qparams: request.queryParameters) { wrappedresponse in
+                            let encoder = Config.jsonEncoder
+                            //encoder.dateEncodingStrategy = .iso8601
+                            let jsondata = try! encoder.encode(wrappedresponse)
+                            response.status(.OK).send(data: jsondata)
+                            next()
+                        }// generate closure
+                    } // logged on
+                    else
+                    {  let jsondata = try! Config.jsonEncoder.encode(["error":"badrequest"])
+                        response.status(.badRequest).send(data: jsondata)
+                        next()
+                    } // not logged on
+                })
+            }
+        } // name is valid
+        return   missingID(response)
     }
-
+    
     ///
     // MARK:- Handles any errors that get set
     ///
