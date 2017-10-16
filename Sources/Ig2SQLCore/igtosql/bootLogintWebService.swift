@@ -158,13 +158,11 @@ func bootLoginWebService() {
             let smtoken = request.queryParameters["smaxx-token"] ?? "no smtoken"
             let name = request.queryParameters["smaxx-name"] ?? "no smname"
             let pic = request.queryParameters["smaxx-pic"] ?? "no smpic"
-            let dic = ["status":SMaxxResponseCode.success    ,"smaxx-id":id   , "smaxx-pic":pic   ,"smaxx-token":smtoken   ,"smaxx-name":name   ] as    [String:Any]
+            let dic: [String:String] = [ "smaxx-id":id   , "smaxx-pic":pic   ,"smaxx-token":smtoken   ,"smaxx-name":name   ]
             
-            response.headers["Content-Type"] = "text/plain; charset=utf-8"
-            try response.status(.OK).send(dic.description).end()
-            
-            //                response.headers["Content-Type"] = "application/json; charset=utf-8"
-            //                try response.status(HTTPStatusCode.OK).send(JSON(dic).description).end()
+            response.headers["Content-Type"] = "application/json; charset=utf-8"
+            let jsonResponse = try  Config.jsonEncoder.encode(dic)
+            try response.status(.OK).send(data: jsonResponse).end()
             
         }
         catch {
@@ -244,9 +242,8 @@ func bootLoginWebService() {
     
     Log.error("Smaxx Login Service started on port \(Config.login_port)")
     // Add an HTTP server and connect it to the router
-    Kitura.addHTTPServer(onPort: Config.login_port, with: router)
-    
-    let srv = Kitura.addHTTPServer(onPort: Config.report_port, with: router)
+     let srv = Kitura.addHTTPServer(onPort: Config.login_port, with: router)
+     
     
     srv.started {
         //self.controllerIsFullyStarted()

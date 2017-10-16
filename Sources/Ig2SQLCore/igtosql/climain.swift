@@ -24,8 +24,9 @@ struct Config {
     static  let jsonDecoder = JSONDecoder()
     static  let jsonEncoder = JSONEncoder()
     
-    static let report_port   = 8080
-    static let login_port = 8090
+    // verizon routr maps external addr with port 9090 to 192.168.2.2:8080
+    static let report_port   = 8090
+    static let login_port = 8080
     
 }
 
