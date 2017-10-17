@@ -11,16 +11,6 @@ struct IgIdent {
 //
 //
 
-import Foundation
-import Kitura
-import KituraNet
-
-import KituraRequest
-//import KituraSession
-
-import SwiftyJSON
-import LoggerAPI
-
 enum SMaxxResponseCode: Int {
     case success = 200
     case workerNotActive = 538
@@ -46,206 +36,6 @@ import KituraRequest
 import LoggerAPI
 import Dispatch
 
-public enum RemoteCallType {
-    case tURLSession
-    case tKituraSynch
-    case tKituraRequest
-    case tContentsOfFile
-}
-
-public let remoteCallType = RemoteCallType.tKituraSynch
-
-
-
-
-//    open var port: Int {
-//        get { return configMgr.port }
-//    }
-//
-//    open var url: String {
-//        get { return configMgr.url }
-//    }
-    
-    // routes setup down below
-    
-    //check usage by mans
-
-
-
-public func qrandom(max:Int) -> Int {
-    #if os(Linux)
-        return Int(rand()) % Int(max)
-    #else
-        return Int(arc4random_uniform(UInt32(max)))
-    #endif
-}
-
-
-
-public extension String {
-    
-    public func leftPadding(toLength: Int, withPad character: Character) -> String {
-        
-        let newLength = self.characters.count
-        
-        if newLength < toLength {
-            
-            return String(repeatElement(character, count: toLength - newLength)) + self
-            
-        } else {
-            return String(self[index(self.startIndex, offsetBy: newLength - toLength)...])
-            ///return self.substring(from: index(self.startIndex, offsetBy: newLength - toLength))
-            
-        }
-    }
-    
-}
-
-///////////
-///////////
-///////////
-///////////
-///////////
-
-struct TraceLog {
-    static var buffer :[String] = []
-    static func bufrd_clear( ) {
-        buffer = []
-    }
-    static func bufrd_print(_ s:String) {
-        buffer += [s]
-    }
-    static func bufrd_print(_ s:[String]) {
-        buffer += s
-    }
-    static func bufrd_contents()->[String] {
-        return buffer
-    }
-}
-public struct ApiCounters {
-    public  var getIn = 0
-    public   var getOut = 0
-    public   var postIn = 0
-    public   var postOut = 0
-    public   func counters()->[String:Int] {
-        return ["get-in":getIn,"get=out":getOut,"post-in":postIn,"post-out":postOut]
-    }
-}
-open class GlobalData {
-    open var localConfig:[String:Any] = [:]
-    open var apic = ApiCounters()
-    open var usersLoggedOn : [Int:[String:Any]] = [:]
-    
-    public init () {
-        
-    }
-}
-
-
-public struct Fetch {
-    
-    public static func get (_ urlstr: String, session:URLSession?,use:RemoteCallType,
-                            completion:@escaping (Int,Data?) ->()){
-        
-        func fetchViaURLSession (_ urlstr: String,_ session:URLSession?,completion:@escaping (Int,Data?) ->()){
-            let url  = URL(string: urlstr)!
-            let request = URLRequest(url: url)
-            
-            // now using a session per datatask so it hopefully runs better under linux
-            
-            //fatal error: Transfer completed, but there's no currect request.: file Foundation/NSURLSession/NSURLSessionTask.swift, line 794
-            
-            //https://github.com/stormpath/Turnstile/issues/31
-            let task = session?.dataTask(with: request) {data,response,error in
-                if let httpResponse = response as? HTTPURLResponse  {
-                    let code = httpResponse.statusCode
-                    guard code == 200 else {
-                        print("remoteHTTPCall to \(url) completing with error \(code)")
-                        completion(code,nil) //fix
-                        return
-                    }
-                }
-                guard error == nil  else {
-                    
-                    print("remoteHTTPCall to \(url) completing  error \(String(describing: error))")
-                    completion(529,nil) //fix
-                    return
-                }
-                
-                // handle response
-                
-                completion(200,data)
-            }
-            task?.resume ()
-        }
-        
-        
-        func fetchViaContentsOfFile(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {/// makes http request outbund
-            do {
-                if  let nurl = URL(string:urlstr) {
-                    let  data =  try Data(contentsOf: nurl)
-                    completion (200,data) 
-                }
-            }
-            catch {
-                completion (527, nil)
-            }
-        }
-        
-        func fetchViaKituraRequest(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {
-            KituraRequest.request(.get, urlstr).response {
-                request, response, data, error in
-                guard error == nil  else {
-                    
-                    print("remoteHTTPCall to \(urlstr) completing  error \(String(describing: error))")
-                    
-                    completion(529,nil) //fix
-                    return
-                }
-                guard let data = data else {
-                    completion(527,nil)
-                    return
-                }
-                completion(200,data)
-            }
-        }
-        
-        func fetchViaKitura(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {/// makes http request outbund
-            func innerHTTP( requestOptions:inout [ClientRequest.Options],completion:@escaping (Int,Data?) ->()) {
-                var responseBody = Data()
-                let req = HTTP.request(requestOptions) { response in
-                    if let response = response {
-                        guard response.statusCode == .OK else {
-                            _ = try? response.readAllData(into: &responseBody)
-                            completion(404,responseBody)
-                            return }
-                        _ = try? response.readAllData(into: &responseBody)
-                        completion(200,responseBody)
-                    }
-                }
-                req.end()
-            }
-            var requestOptions: [ClientRequest.Options] = ClientRequest.parse(urlstr)
-            let headers = ["Content-Type": "application/json"]
-            requestOptions.append(.headers(headers))
-            innerHTTP(requestOptions: &requestOptions,completion:completion)
-        }
-        
-        let remoteCallType:RemoteCallType = use
-        
-        switch remoteCallType {
-            
-        case RemoteCallType.tURLSession:
-            fetchViaURLSession(urlstr, session, completion: completion)
-        case RemoteCallType.tKituraSynch:
-            fetchViaKitura(urlstr, session, completion: completion)
-        case RemoteCallType.tKituraRequest:
-            fetchViaKituraRequest(urlstr, session, completion: completion)
-        case RemoteCallType.tContentsOfFile:
-            fetchViaContentsOfFile(urlstr, session, completion: completion)
-        }
-    }
-}
 open class LoginController {
     let startdate = Date()
     // open let configMgr: ConfigurationManager
@@ -296,15 +86,10 @@ open class LoginController {
         
     }
     public init?(tag:String ) throws  {
-        
-   
-            
             self.clientId =  "d7020b2caaf34e13a1ca4bdf1504e4dc"
             self.clientSecret = "81b197d145c1470caeec39fc6ad0b48a"
             self.callbackUrl =  "http://96.250.76.158:9090/authcallback"
             self.callbackPostUrl = "http://igblu.mybluemix.net"
-            
-    
         
     }// init
     
@@ -320,21 +105,12 @@ open class LoginController {
 
     func sendCallAgainSoon(_ response: RouterResponse) {
         response.headers["Content-Type"] = "application/json; charset=utf-8"
-        do {
-            
             let jsonResponse : [String : Any] = ["status":500 ,"results":"initializing - try again soon","timenow":"\(Date())"]
-            let data = try JSONSerialization.data(withJSONObject:jsonResponse, options:.prettyPrinted )
-            
-            try response.status(.OK).send(data:data).end() } catch {
-                Log.error("can not send response in getJSON")
-        }
+            let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
+            try! response.status(.badRequest).send(data: jsondata).end()
     }
     
     /// standard outbound calls -
-    
-    
-    
-    
     public   func finally(code:Int,data:Data,userid:String,token:String,
                           request: RouterRequest, response: RouterResponse)
         
@@ -348,30 +124,16 @@ open class LoginController {
             sloRunningWebService(id: userid, token: token){status,html, dict in
                 do{
                     response.headers["Content-Type"] = "application/json; charset=utf-8"
-                    let edict = ["fetchedStatus":status ,"status":status ,"payload":dict,"serverURL":serverip,"time-of-report":"\(Date())"] as [String : Any]
-                    let jsonResponse = try JSONSerialization.data(withJSONObject:edict, options:.prettyPrinted )
-                    
-                    try response.status(.OK).send(data: jsonResponse).end()
+                    let jsonResponse = ["fetchedStatus":status ,"status":status ,"payload":dict,"serverURL":serverip,"time-of-report":"\(Date())"] as [String : Any]
+                    let jsondata = try   Config.jsonEncoder.encode(jsonResponse)
+                    try  response.status(.badRequest).send(data: jsondata).end()
                 }
                 catch{
                     print("sloRunningWebService json try failed")
-                    
                 }
                 return
             }
-            //        case "plain" :
-            //            sloRunningWebService(id: userid, token: token){status,html,dict in
-            //                do {
-            //                    response.headers["Content-Type"] = "text/html"
-            //                    let html = MasterTasks.htmlDynamicPageDisplay(baseurl: self.url)
-            //                    try response.status(.OK).send(html).end()
-            //
-            //                }
-            //                catch {
-            //                    print("sloRunningWebService plain try failed")
-            //                }
-            //                return
-        //            }
+  
         default: break
         }
         
@@ -445,12 +207,6 @@ extension LoginController {
         jsonResponse["timenow"].stringValue = "\(Date())"
         try? response.status(.notAcceptable).send(json: jsonResponse).end()
     }
-    
-    
-    
-
-    
-    
     
     static func innerHTTP( requestOptions:inout [ClientRequest.Options],completion:@escaping (Int,Data?) ->()) {
         //print ("innerhttp \(requestOptions)")

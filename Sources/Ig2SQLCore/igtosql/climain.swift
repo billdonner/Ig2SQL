@@ -17,9 +17,48 @@
 import Foundation
 /// import  MySQLDriver
 import Kitura
+import KituraRequest
+
+import KituraNet
 import Health
 import HeliumLogger
 import LoggerAPI
+
+
+struct TraceLog {
+    static var buffer :[String] = []
+    static func bufrd_clear( ) {
+        buffer = []
+    }
+    static func bufrd_print(_ s:String) {
+        buffer += [s]
+    }
+    static func bufrd_print(_ s:[String]) {
+        buffer += s
+    }
+    static func bufrd_contents()->[String] {
+        return buffer
+    }
+}
+public struct ApiCounters {
+    public  var getIn = 0
+    public   var getOut = 0
+    public   var postIn = 0
+    public   var postOut = 0
+    public   func counters()->[String:Int] {
+        return ["get-in":getIn,"get=out":getOut,"post-in":postIn,"post-out":postOut]
+    }
+}
+open class GlobalData {
+    open var localConfig:[String:Any] = [:]
+    open var apic = ApiCounters()
+    open var usersLoggedOn : [Int:[String:Any]] = [:]
+    
+    public init () {
+        
+    }
+}
+
 
 struct Config {
     static let maxMediaCount = 6 // is ignored in sandbox anyway
@@ -54,24 +93,18 @@ var startdate =  Date()
 
 public  func missingID(_ response:RouterResponse) {
     response.headers["Content-Type"] = "application/json; charset=utf-8"
-    let out:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
-    do {
-        let data = try JSONSerialization.data(withJSONObject:out, options: .prettyPrinted)
-        
-        try response.status(.OK).send(data:data).end() } catch {
-            Log.error("can not send response in missingID")
-    }
+    let jsonResponse:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
+    let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
+    try! response.status(.badRequest).send(data: jsondata).end()
 }
 public   func unkownOP(_ response:RouterResponse) {
     response.headers["Content-Type"] = "application/json; charset=utf-8"
-    let out:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
-    do {
-        let data = try JSONSerialization.data(withJSONObject:out, options: .prettyPrinted)
-        
-        try response.status(.OK).send(data:data).end() } catch {
-            Log.error("can not send response in missingID")
-    }
+    let jsonResponse:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
+    let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
+    try! response.status(.badRequest).send(data: jsondata).end()
 }
+
+// MARK:- open db, handle command arguments
 public func cliMain(_ argcv:Argstuff) {
     
     // processed args passed in
@@ -102,40 +135,9 @@ public func cliMain(_ argcv:Argstuff) {
         
     case .export:
         if let furl = argcv.modelDirURL?.appendingPathComponent("model").appendingPathExtension("json"),
-            let uid = argcv.modelDirURL?.lastPathComponent{
-            do {
-                let data = try Data(contentsOf: furl)
-                let model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
-                let sqlm = SQLMaker(models:[model ])
-                sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
-                    let spacer = "\n--\n"
-                    let dropmake = "DROP DATABASE IGBASE; CREATE DATABASE IGBASE; USE IGBASE;"
-                    let jumboSQL = dropmake + spacer + createSQL + spacer + insertSQL + spacer + temptableSQL + spacer
-                    if let xd =  argcv.exportDirURL?.appendingPathComponent(uid, isDirectory: true) {
-                        do {
-                            try FileManager.default.createDirectory(at: xd, withIntermediateDirectories: true, attributes: [:])
-                            
-                            let createsqlurl = xd.appendingPathComponent("header.sql")
-                            let insertsqlurl = xd.appendingPathComponent("inserts.sql")
-                            let temptablesqlurl = xd.appendingPathComponent("temptables.sql")
-                            let onefileurl = xd.appendingPathComponent("recreate.sql")
-                            try  createSQL.write(to: createsqlurl, atomically: true, encoding: .utf8 )
-                            try  insertSQL.write(to: insertsqlurl, atomically: true, encoding: .utf8 )
-                            try  temptableSQL.write(to: temptablesqlurl, atomically: true, encoding: .utf8 )
-                            try  jumboSQL.write(to: onefileurl, atomically: true, encoding: .utf8 )
-                            print()
-                            print("Exported all tables to mysql import files")
-                            print()
-                        }
-                        catch {
-                            print ("could not write sql files error \(error)")
-                        }
-                    }
-                }
-            }//do
-            catch {
-                print ("could not read model files error \(error)")
-            }
+            let uid = argcv.modelDirURL?.lastPathComponent,
+                let ex = argcv.exportDirURL {
+            makesql(furl: furl,uid: uid, exportURL: ex)
             exit(0)
         }
         
@@ -185,3 +187,147 @@ public func cliMain(_ argcv:Argstuff) {
         
     }
 }//theMain
+
+
+public enum RemoteCallType {
+    case tURLSession
+    case tKituraSynch
+    case tKituraRequest
+    case tContentsOfFile
+}
+
+public let remoteCallType = RemoteCallType.tKituraSynch
+
+public func qrandom(max:Int) -> Int {
+    #if os(Linux)
+        return Int(rand()) % Int(max)
+    #else
+        return Int(arc4random_uniform(UInt32(max)))
+    #endif
+}
+
+public extension String {
+    
+    public func leftPadding(toLength: Int, withPad character: Character) -> String {
+        
+        let newLength = self.characters.count
+        if newLength < toLength {
+            return String(repeatElement(character, count: toLength - newLength)) + self
+        } else {
+            return String(self[index(self.startIndex, offsetBy: newLength - toLength)...])
+        }
+    }
+    
+}
+
+///////////
+///////////
+///////////
+///////////
+///////////
+
+
+public struct Fetch {
+    
+    public static func get (_ urlstr: String, session:URLSession?,use:RemoteCallType,
+                            completion:@escaping (Int,Data?) ->()){
+        
+        func fetchViaURLSession (_ urlstr: String,_ session:URLSession?,completion:@escaping (Int,Data?) ->()){
+            let url  = URL(string: urlstr)!
+            let request = URLRequest(url: url)
+            
+            // now using a session per datatask so it hopefully runs better under linux
+            
+            //fatal error: Transfer completed, but there's no currect request.: file Foundation/NSURLSession/NSURLSessionTask.swift, line 794
+            
+            //https://github.com/stormpath/Turnstile/issues/31
+            let task = session?.dataTask(with: request) {data,response,error in
+                if let httpResponse = response as? HTTPURLResponse  {
+                    let code = httpResponse.statusCode
+                    guard code == 200 else {
+                        print("remoteHTTPCall to \(url) completing with error \(code)")
+                        completion(code,nil) //fix
+                        return
+                    }
+                }
+                guard error == nil  else {
+                    
+                    print("remoteHTTPCall to \(url) completing  error \(String(describing: error))")
+                    completion(529,nil) //fix
+                    return
+                }
+                
+                // handle response
+                
+                completion(200,data)
+            }
+            task?.resume ()
+        }
+        
+        
+        func fetchViaContentsOfFile(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {/// makes http request outbund
+            do {
+                if  let nurl = URL(string:urlstr) {
+                    let  data =  try Data(contentsOf: nurl)
+                    completion (200,data)
+                }
+            }
+            catch {
+                completion (527, nil)
+            }
+        }
+        
+        func fetchViaKituraRequest(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {
+            KituraRequest.request(.get, urlstr).response {
+                request, response, data, error in
+                guard error == nil  else {
+                    
+                    print("remoteHTTPCall to \(urlstr) completing  error \(String(describing: error))")
+                    
+                    completion(529,nil) //fix
+                    return
+                }
+                guard let data = data else {
+                    completion(527,nil)
+                    return
+                }
+                completion(200,data)
+            }
+        }
+        
+        func fetchViaKitura(_ urlstr: String, _ session:URLSession?,completion:@escaping (Int,Data?) ->()) {/// makes http request outbund
+            func innerHTTP( requestOptions:inout [ClientRequest.Options],completion:@escaping (Int,Data?) ->()) {
+                var responseBody = Data()
+                let req = HTTP.request(requestOptions) { response in
+                    if let response = response {
+                        guard response.statusCode == .OK else {
+                            _ = try? response.readAllData(into: &responseBody)
+                            completion(404,responseBody)
+                            return }
+                        _ = try? response.readAllData(into: &responseBody)
+                        completion(200,responseBody)
+                    }
+                }
+                req.end()
+            }
+            var requestOptions: [ClientRequest.Options] = ClientRequest.parse(urlstr)
+            let headers = ["Content-Type": "application/json"]
+            requestOptions.append(.headers(headers))
+            innerHTTP(requestOptions: &requestOptions,completion:completion)
+        }
+        
+        let remoteCallType:RemoteCallType = use
+        
+        switch remoteCallType {
+            
+        case RemoteCallType.tURLSession:
+            fetchViaURLSession(urlstr, session, completion: completion)
+        case RemoteCallType.tKituraSynch:
+            fetchViaKitura(urlstr, session, completion: completion)
+        case RemoteCallType.tKituraRequest:
+            fetchViaKituraRequest(urlstr, session, completion: completion)
+        case RemoteCallType.tContentsOfFile:
+            fetchViaContentsOfFile(urlstr, session, completion: completion)
+        }
+    }
+}
