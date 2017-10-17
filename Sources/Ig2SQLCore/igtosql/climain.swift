@@ -127,7 +127,7 @@ public func cliMain(_ argcv:Argstuff) {
             let uid = argcv.modelDirURL?.lastPathComponent{
             do {
                 let data = try Data(contentsOf: furl)
-                let model = try  Config.jsonDecoder.decode(Model.self, from: data)
+                let model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
                 let sqlm = SQLMaker(models:[model ])
                 sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
                     let spacer = "\n--\n"

@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension Model {
+extension InstagrammModel {
     /// wow, we only need one pair of these ever
  
     static let df = DateFormatter()
@@ -47,7 +47,7 @@ extension InstagramPoller {
  
     func saveModelAndExportAtBitterEnd(_ uid:String){
         let expstarttime = Date()
-        let succ =    Model.verifyThenSave(self.model,tag: uid)
+        let succ =    InstagrammModel.verifyThenSave(self.model,tag: uid)
         if !succ {
             NSLog("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\(uid) in \(Date().timeIntervalSince(expstarttime))secs")
         } else {

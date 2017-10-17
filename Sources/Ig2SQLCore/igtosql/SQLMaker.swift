@@ -13,19 +13,19 @@ class SQLMaker {
     var obuf = ""
     
     var vcache:[String:Int] = [:]
-    var models: [Model]
-    var model: Model
+    var models: [InstagrammModel]
+    var model: InstagrammModel
     
-    init(model:Model){
+    init(model:InstagrammModel){
         self.models = [model]
         self.model = model
     }
-    init(models:[Model]){
+    init(models:[InstagrammModel]){
         self.models = models
         if let m =  models.first {
             self.model = m
         } else {
-            self.model = Model()
+            self.model = InstagrammModel()
         }
     }
     

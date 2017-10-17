@@ -86,7 +86,7 @@
     var cnt = Cntrs()
     var apiCycle : APICycle?
     
-    var model: Model!
+    var model: InstagrammModel!
     //var scratchmem : NonPersistentObjs!
     var usersOnDisk : UsersOnDiskModel!
     private var perUserTasks: [PerUserInfo] = []
@@ -155,15 +155,15 @@
         
         do {
             let data = try Data(contentsOf: furl)
-            model = try  Config.jsonDecoder.decode(Model.self, from: data)
+            model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
             dbgprint("  - \(item.id) cycle start  \(item.name) by reloading  \(idx):\(usersOnDisk.users.count) ")
         }
         catch {
             // if cant find model, make new
             let user = usersOnDisk.users[idx]
             print ("creating new model because couldnt find modelforuser   modelDirURL: \(furl)")
-            model = Model() // start clean
-            let succ =    Model.verifyThenSave (model,tag:  user.id )
+            model = InstagrammModel() // start clean
+            let succ =    InstagrammModel.verifyThenSave (model,tag:  user.id )
             if !succ {
                 dbgprint("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\( user.id) in \(Date().timeIntervalSince(cyclestarttime))secs")
             }
