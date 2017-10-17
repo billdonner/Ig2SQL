@@ -1,5 +1,5 @@
 //
-//  igmain.swift
+//  cliMain
 //  igtosql
 //
 //  Created by william donner on 9/15/17.
@@ -11,6 +11,9 @@
 ///
 /// TODO: MySQLDriver has been copied in and should be used as package - fix or wait?
 /// TODO: Cant enable KituraSession because swift package update hangs with BlueCryptor
+///
+///
+
 import Foundation
 /// import  MySQLDriver
 import Kitura
@@ -48,31 +51,6 @@ var lc : LoginController?
 var startdate =  Date()
 
 /// standard error responses -
-
-//func finishJSONStatusResponse(_ extra: [String:Any], request: RouterRequest, response: RouterResponse  , status:Int = 200, next: @escaping () -> Void) throws {
-//    let now = Date()
-//    let uptime = now.timeIntervalSince(startdate)
-//    let prettysecs = String(format:"%0.2f",uptime)
-//    var out :  [String:Any] = ["server-url":serverip,"response-status":status,"servertitle":loginServiceIsBooted ? "loginsvc":"reportsvc","description":serverConfig.description,"softwareversion":"1.0","elapsed-secs":"\(prettysecs)","up-time":uptime,"timenow":"\(Date())","httpgets":globalData.apic.getIn]
-//    
-//    for (key,val) in extra {
-//        out[key]=val
-//    }
-//    
-//    response.headers["Content-Type"] = "application/json; charset=utf-8"
-//    let data = try JSONSerialization.data(withJSONObject:out, options:.prettyPrinted )
-//    try response.status(.OK).send(data:data).end()
-//}
-//public   func log (request: RouterRequest, response: RouterResponse, next: @escaping () -> Void) throws {
-//    let qp = request.queryParameters
-//    /// for now - just put all the query paramters into the log
-//    Log.info("LOGLINE \(qp)")
-//    // prepare payload
-//    let out = ["logged":qp ] as [String : Any]
-//    // send ack to caller
-//    try finishJSONStatusResponse(out, request: request, response: response, next: next)
-//    
-//}
 
 public  func missingID(_ response:RouterResponse) {
     response.headers["Content-Type"] = "application/json; charset=utf-8"
