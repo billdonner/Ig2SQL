@@ -90,47 +90,37 @@ func bootLoginWebService() {
         
         lc.globalData.apic.getIn += 1
     }
-    
-    //    /// this path allows other servers to obtain the instagram goodies so they can make instagram callls instead of us
-    //    /// TODO: - add more security possibly even dhecking ip addresses against a whitelist
-    //
-    //    router.get("/igtoken/:userid") {   request, response, next in
-    //
-    //        // -- standard api token userid validation
-    //        guard let lc = lc else { return }
-    //        guard lc.fullyInitialized else { lc.sendCallAgainSoon(response); return }
-    //        guard let smtoken = Int(request.queryParameters["smtoken"]!) else { return  lc.missingID(response) }
-    //        guard let loggedOnD  = lc.globalData.usersLoggedOn[smtoken]  else {  return  lc.missingID(response)  }
-    //        guard let loggedOnData = loggedOnD , let userid = loggedOnData["userid"], let uid = request.parameters["userid"], uid == userid else { return  lc.missingID(response)  }
-    //        // -- end standard verification
-    //        guard let token = loggedOnData["token"] else { return  lc.missingID(response)  }
-    //        response.headers["Content-Type"] = "application/json; charset=utf-8"
-    //        var json  :[String:Any] = ["status":200 ,"ig-token":token,"ig-userid":userid]
-    //        json ["timenow"]  = "\(Date())"
-    //        let jsonResponse = try  Config.jsonEncoder.encode(json)
-    //        try response.status(.OK).send(data: jsonResponse).end()
-    //
-    //        lc.globalData.apic.getIn += 1
-    //
-    //    }
+
     
     // MARK: Callback GETs and POSTs from IG come here
     ///
     router.get("/logout")  { request, response, next in
         
         guard let lc = lc else { return }
-        guard let smtoken = Int(request.queryParameters["smtoken"]!) else {
+        guard let smtokeni = request.queryParameters["smtoken"]  else {
             return  missingID(response)
         }
-        let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
-        if loggedOnData != nil {
+        guard let smtoken = Int(smtokeni) else {
+            return  missingID(response)
+        }
+       
+        zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+     
+            if isloggedon {
+             //let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
+            zh.deleteLoginCredentials(smaxxtoken: smtoken)
             lc.globalData.usersLoggedOn[smtoken] = nil
-            response.headers["Content-Type"] = "text/plain; charset=utf-8"
-            try response.send("logged out from here").end()
+             response.headers["Content-Type"] = "application/json; charset=utf-8"
+                try! response.status(.OK).send("logged out from here").end()
+                next()
             return
         }
-        response.headers["Content-Type"] = "text/plain; charset=utf-8"
-        try response.send("not logged on").end()
+            let jsondata = try! Config.jsonEncoder.encode(["error":"notloggedon"])
+             response.headers["Content-Type"] = "application/json; charset=utf-8"
+            response.status(.badRequest).send(data: jsondata)
+            next()
+            return
+        })
     }
     
     // This should get the ball rolling
@@ -138,7 +128,10 @@ func bootLoginWebService() {
         
         guard let lc = lc else { return }
         guard let smtokenstr =  request.queryParameters["smtoken"] else {
-            return    missingID(response)
+            // if no token passed in then just go for full login
+            lc.globalData.apic.getIn += 1
+            lc.STEP_ONE(response) // will redirect to IG
+            return
         }
         if let smtoken = Int(smtokenstr) {
             // call sql service to read record keyed by 'smtoken'
@@ -168,10 +161,8 @@ func bootLoginWebService() {
     }
     
     router.get("/authcallback" ) { request, response, next in
-        
-        guard let lc = lc else { return }
         //Log.error("************* /authcallback will authenticate ")
-        lc.STEP_TWO (request, response: response ) { status in
+        lc?.STEP_TWO (request, response: response ) { status in
             if status != 200 { Log.error("Back from STEP_TWO status \(status) ") }
         }
         

@@ -305,6 +305,18 @@ private func insertinto(_ table:String,args:[Any]) throws {
        // assert ( con.affectedRows == 1)
     }
 }
+    private func deletefrom(_ table:String,key:Any,val:Any) -> Bool {
+        let s = "delete from \(table) where \(key) = '\(val)'"
+           do {
+            let a = try con.prepare(s)
+            let _ = try a.query( [] )
+        }
+        catch {
+            return false
+        }
+        return true
+    }
+    
 public func printcounts(_ table:String,args:[Any]) throws {
     
     try iselectfrom("select count(*)from \(table)", args: args) { row in
@@ -376,6 +388,10 @@ public func iselectfrom(_  s:String,args:[Any],each:(MySQL.ResultSet)->()) throw
     func setLoginCredentials(smaxxtoken:Int,igtoken:String,iguserid:String,name:String,pic:String) throws {
         let vals = [igtoken,iguserid,name,pic,smaxxtoken] as [Any]
         try insertinto("smaxxusers",args: vals)
+    }
+    func deleteLoginCredentials(smaxxtoken:Int )  {
+         let b = deletefrom("smaxxusers",key:"smaxxtoken",val:smaxxtoken)
+        if !b { print("delete from smaxxusers failed")}
     }
 func createallTables() {
     BitsOfMySQL.eachrow.forEach({ (table,_) in

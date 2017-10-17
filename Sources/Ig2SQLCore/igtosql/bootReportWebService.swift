@@ -15,7 +15,7 @@ struct ReportResponse:Codable {
     let reportname:String
     let elapsed:TimeInterval
     let queryParameters:[String:String]
-    let reportHeaders: [ String]
+    let reportHeaders: [String]
     let reportData: [[String]]
 }
 struct ReportResponseWrapped:Codable {
@@ -43,8 +43,6 @@ func bootReportWebService() {
     // Handle HTTP GET requests to /
     // Serve static content from "public"
     router.all("/", middleware: StaticFileServer())
-    
-    
     
     // JSON Get request
     router.get("/json") {
@@ -74,16 +72,9 @@ func bootReportWebService() {
         }
         next()
     }
-    
-    
-    
     router.get("/report/:id/:name/") {
         request, response, next in
-        
-        guard let lc = lc else {
-            print("report id name")
-            return
-        }
+
         if let id = request.parameters["id"],
             let name = request.parameters["name"],
             let reportKind = ReportKind.make(s: name) {
@@ -103,17 +94,31 @@ func bootReportWebService() {
                             let jsondata = try! encoder.encode(wrappedresponse)
                             response.status(.OK).send(data: jsondata)
                             next()
+                            return
                         }// generate closure
                     } // logged on
                     else
                     {  let jsondata = try! Config.jsonEncoder.encode(["error":"badrequest"])
                         response.status(.badRequest).send(data: jsondata)
                         next()
+                        return
                     } // not logged on
                 })
+            } else {
+                //token did not convert
+                let jsondata = try! Config.jsonEncoder.encode(["error":"badtokenfmt"])
+                response.status(.badRequest).send(data: jsondata)
+                next()
+                return
             }
         } // name is valid
-        return   missingID(response)
+        else {
+            //reportnameinvalid
+            let jsondata = try! Config.jsonEncoder.encode(["error":"reportnameinvalid"])
+            response.status(.badRequest).send(data: jsondata)
+            next()
+            return
+        }
     }
     
     ///
