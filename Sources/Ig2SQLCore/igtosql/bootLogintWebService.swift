@@ -124,7 +124,7 @@ func bootLoginWebService() {
     }
     
     // This should get the ball rolling
-    router.get("/showlogin")  { request, response, next in
+    router.get("/login")  { request, response, next in
         
         guard let lc = lc else { return }
         guard let smtokenstr =  request.queryParameters["smtoken"] else {
