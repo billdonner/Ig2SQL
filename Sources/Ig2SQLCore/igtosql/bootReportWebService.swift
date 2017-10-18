@@ -47,16 +47,13 @@ func bootReportWebService() {
     // JSON Get request
     router.get("/json") {
         request, response, next in
-        Log.debug("GET - /json route handler...")
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
         var jsonResponse :[String:String] = [:]
         jsonResponse["framework"]  = "Ig2SQLReportService"
         jsonResponse["applicationName"]  = "IG2SQL"
         jsonResponse["company"]  = "PurplePeople"
         jsonResponse["organization"]  = "DonnerParties"
         jsonResponse["location"] = "New York, NY"
-        let jsondata = try  Config.jsonEncoder.encode(jsonResponse)
-        try response.status(.OK).send(data: jsondata).end()
+        sendOKResponse(response, data: jsonResponse)
         next()
     }
     
@@ -86,36 +83,33 @@ func bootReportWebService() {
                 zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
                     if isloggedon {
                         // if already logged on send back existing record
-                        response.headers["Content-Type"] = "application/json; charset=utf-8"
                         // make report, call closure when finished
                         generateReport(id: id,kind:reportKind, qparams: request.queryParameters) { wrappedresponse in
                             let encoder = Config.jsonEncoder
                             //encoder.dateEncodingStrategy = .iso8601
                             let jsondata = try! encoder.encode(wrappedresponse)
-                            response.status(.OK).send(data: jsondata)
-                            next()
-                            return
+                            sendOKPreEncoded(response,data:jsondata)
+                            
                         }// generate closure
                     } // logged on
                     else
-                    {  let jsondata = try! Config.jsonEncoder.encode(["error":"badrequest"])
-                        response.status(.badRequest).send(data: jsondata)
+                    {
+                        
+                        sendErrorResponse(response, status: 400, message: "badrequest")
                         next()
                         return
                     } // not logged on
                 })
             } else {
                 //token did not convert
-                let jsondata = try! Config.jsonEncoder.encode(["error":"badtokenfmt"])
-                response.status(.badRequest).send(data: jsondata)
+                sendErrorResponse(response, status: 400, message: "badtokenfmt")
                 next()
                 return
             }
         } // name is valid
         else {
-            //reportnameinvalid
-            let jsondata = try! Config.jsonEncoder.encode(["error":"reportnameinvalid"])
-            response.status(.badRequest).send(data: jsondata)
+            //reportnameinvalid  
+            sendErrorResponse(response, status: 400, message: "reportnameinvalid")
             next()
             return
         }

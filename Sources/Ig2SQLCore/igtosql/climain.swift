@@ -91,17 +91,33 @@ var startdate =  Date()
 
 /// standard error responses -
 
-public  func missingID(_ response:RouterResponse) {
+struct ErrResponse<T:Codable> : Codable {
+    let status:Int
+    let message:T
+    let timenow:Date
+}
+func  sendErrorResponse(_ response:RouterResponse,status:Int,message:String) {
+    let err = ErrResponse<String>(status: status, message:message, timenow: Date())
+    let jsondata = try!  Config.jsonEncoder.encode(err)
     response.headers["Content-Type"] = "application/json; charset=utf-8"
-    let jsonResponse:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
-    let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
     try! response.status(.badRequest).send(data: jsondata).end()
 }
-public   func unkownOP(_ response:RouterResponse) {
+func  sendOKResponse(_ response:RouterResponse, data:[String:String]) {
+    let err = ErrResponse<[String:String]>(status: 200, message: data, timenow: Date())
+    let data = try!  Config.jsonEncoder.encode(err)
+    sendOKPreEncoded(response, data: data)
+}
+func    sendOKPreEncoded(_ response: RouterResponse,data:Data)  {
     response.headers["Content-Type"] = "application/json; charset=utf-8"
-    let jsonResponse:[String:Any] = ["status":404 ,"results":"no ID","timenow":"\(Date())"]
-    let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
-    try! response.status(.badRequest).send(data: jsondata).end()
+     try! response.status(.OK).send(data:  data).end()
+}
+ 
+public  func missingID(_ response:RouterResponse) {
+    sendErrorResponse(response,  status: 404, message: "no id" )
+  
+}
+public   func unkownOP(_ response:RouterResponse) {
+    sendErrorResponse(response, status: 403, message: "bad op")
 }
 
 // MARK:- open db, handle command arguments

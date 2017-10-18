@@ -33,6 +33,7 @@ import Foundation
 import Kitura
 import KituraNet
 import KituraRequest
+import SwiftyJSON
 import LoggerAPI
 import Dispatch
 
@@ -104,10 +105,8 @@ open class LoginController {
     
 
     func sendCallAgainSoon(_ response: RouterResponse) {
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-            let jsonResponse : [String : Any] = ["status":500 ,"results":"initializing - try again soon","timenow":"\(Date())"]
-            let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
-            try! response.status(.badRequest).send(data: jsondata).end()
+        
+        sendErrorResponse(response, status: 500, message: "initializing - try again soon")
     }
     
     /// standard outbound calls -
@@ -123,10 +122,9 @@ open class LoginController {
         case "json" :
             sloRunningWebService(id: userid, token: token){status,html, dict in
                 do{
-                    response.headers["Content-Type"] = "application/json; charset=utf-8"
                     let jsonResponse = ["fetchedStatus":status ,"status":status ,"payload":dict,"serverURL":serverip,"time-of-report":"\(Date())"] as [String : Any]
-                    let jsondata = try   Config.jsonEncoder.encode(jsonResponse)
-                    try  response.status(.badRequest).send(data: jsondata).end()
+                    let  data = try   Config.jsonEncoder.encode(jsonResponse)
+                        sendOKPreEncoded(response, data: data)
                 }
                 catch{
                     print("sloRunningWebService json try failed")
@@ -199,14 +197,7 @@ extension LoginController {
     
     ////
     //MARK: Configuration process starts right here:::
-  
-    
-    func unknownOP(_ response:RouterResponse) {
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-        var jsonResponse = JSON(["status":405 ,"results":"unknown OP"])
-        jsonResponse["timenow"].stringValue = "\(Date())"
-        try? response.status(.notAcceptable).send(json: jsonResponse).end()
-    }
+
     
     static func innerHTTP( requestOptions:inout [ClientRequest.Options],completion:@escaping (Int,Data?) ->()) {
         //print ("innerhttp \(requestOptions)")
@@ -348,19 +339,6 @@ extension LoginController {
     }// end of step two
     
 
-    
-    
-    public func badSub(_ response:RouterResponse,reason:String) {
-        Log.error(reason)
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
-        var jsonResponse = JSON(["status":500 ,"results":reason])
-        
-        //jsonResponse["serverURL"].stringValue = appEnv.url
-        
-        jsonResponse["timenow"].stringValue = "\(Date())"
-        try? response.status(.notAcceptable).send(json: jsonResponse).end()
-    }
-    
     /// make subscription
     open func make_subscription (_ outerresponse:RouterResponse, access_token:String, subscriptionVerificationToken:String) {
         
@@ -385,11 +363,11 @@ extension LoginController {
                                 request, response, data, error in
                                 // do something with data
                                 guard error == nil  else {
-                self.badSub(outerresponse,reason:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful )")
+                          sendErrorResponse(outerresponse, status: 501, message: "INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful )")
                                     return
                                 }
                                 guard  let data = data else {
-                                    self.badSub(outerresponse,reason:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) returned with no data")
+                                   sendErrorResponse(outerresponse, status: 502, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) returned with no data")
                                     return
                                 }
                                 
@@ -397,10 +375,10 @@ extension LoginController {
                                 let metacode = jsonBody["meta"]["code"].intValue
                                 guard metacode == 200 else {
                                     let mess = jsonBody["meta"]["error_message"].stringValue
-                                    self.badSub(outerresponse,reason:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful meta \(metacode) \(mess)")
+                                   sendErrorResponse(outerresponse, status: 503, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful meta \(metacode) \(mess)")
                                     return
                                 }
-                                self.badSub(outerresponse,reason:"* INSTAGRAM SAYS  subscriptionPostCallback \(subscriptionVerificationToken) successful")
+                                sendOKResponse(outerresponse,data:["reason" :" INSTAGRAM SAYS  subscriptionPostCallback \(subscriptionVerificationToken) successful"])
         }// response from immediate post
     }
     //}

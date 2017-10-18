@@ -51,16 +51,13 @@ func bootLoginWebService() {
     // JSON Get request
     router.get("/json") {
         request, response, next in
-        Log.debug("GET - /json route handler...")
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
         var jsonResponse :[String:String] = [:]
         jsonResponse["framework"]  = "Ig2SQLLoginService"
         jsonResponse["applicationName"]  = "IG2SQL"
         jsonResponse["company"]  = "PurplePeople"
         jsonResponse["organization"]  = "DonnerParties"
         jsonResponse["location"] = "New York, NY"
-        let jsondata = try  Config.jsonEncoder.encode(jsonResponse)
-        try response.status(.OK).send(data: jsondata).end()
+        sendOKResponse(response, data: jsonResponse)
         next()
     }
     
@@ -81,13 +78,10 @@ func bootLoginWebService() {
         
         guard let lc = lc else { return }
         let qp = request.queryParameters
-        response.headers["Content-Type"] = "application/json; charset=utf-8"
         var json  :[String:String] = ["logged":"\(qp)"]
         Log.info("LOGLINE \(qp)")
-        json ["timenow"]  = "\(Date())"
-        let jsonResponse = try  Config.jsonEncoder.encode(json)
-        try response.status(.OK).send(data: jsonResponse).end()
-        
+        json ["timenow"]  = "\(Date())"  
+        sendOKResponse(response, data:json)
         lc.globalData.apic.getIn += 1
     }
 
@@ -110,14 +104,12 @@ func bootLoginWebService() {
              //let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
             zh.deleteLoginCredentials(smaxxtoken: smtoken)
             lc.globalData.usersLoggedOn[smtoken] = nil
-             response.headers["Content-Type"] = "application/json; charset=utf-8"
-                try! response.status(.OK).send("logged out from here").end()
+                sendOKResponse(response, data:["desc":"logged out from here"])
                 next()
             return
         }
-            let jsondata = try! Config.jsonEncoder.encode(["error":"notloggedon"])
-             response.headers["Content-Type"] = "application/json; charset=utf-8"
-            response.status(.badRequest).send(data: jsondata)
+
+            sendErrorResponse(response, status: 402, message: "notloggedon")
             next()
             return
         })
@@ -138,11 +130,9 @@ func bootLoginWebService() {
             zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
           
                 if isloggedon {
-                 // if already logged on send back existing record
-                    response.headers["Content-Type"] = "application/json; charset=utf-8"
-                    let jsonResponse = SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name)
-                    let jsondata = try!  Config.jsonEncoder.encode(jsonResponse)
-                    try! response.status(.OK).send(data: jsondata).end()
+                 // if already logged on send back existing record 
+                    let jsondata = try!  Config.jsonEncoder.encode(SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name))
+                    sendOKPreEncoded(response,data:jsondata)
                     next()
                     return
                 }
@@ -179,8 +169,8 @@ func bootLoginWebService() {
             let name = request.queryParameters["smaxx-name"] ?? "no smname"
             let pic = request.queryParameters["smaxx-pic"] ?? "no smpic"
             let dict = SmaxxResponse(status: 201, igid: id, pic: pic, smaxxtoken: smtoken, name: name)
-            let jsonResponse = try  Config.jsonEncoder.encode(dict)
-            try response.status(.OK).send(data: jsonResponse).end()
+            let data = try  Config.jsonEncoder.encode(dict)
+           sendOKPreEncoded(response, data: data)
         }
         catch {
             Log.error("Failed /authcallback redirect \(error)")
