@@ -173,7 +173,7 @@ extension Instagramm {
                     let params = ["client_id": Router.clientID,
                                "scope":"basic likes follower_list comments relationships public_content",
                                   "redirect_uri":Router.redirectURI,
-                                   "response_type":"token"] // client side
+                                   "response_type":"code"] // server side
                     let pathString = "/oauth/authorize/" //?client_id=" + Router.clientID + "&redirect_uri=" + Router.redirectURI + "&response_type=code"
                     return (pathString, params as [String : AnyObject])
                 }

@@ -89,6 +89,9 @@ var lc : LoginController?
 
 var startdate =  Date()
 
+
+var globalBuckets = APIBuckets() // scratch space
+
 /// standard error responses -
 
 struct ErrResponse<T:Codable> : Codable {

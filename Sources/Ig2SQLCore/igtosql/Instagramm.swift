@@ -15,7 +15,15 @@ public protocol IGResponse {
     var meta : Instagramm.Meta {get}
     var pagination: Instagramm.Pagination? {get}
 }
-
+struct SessionState {
+    
+}
+struct Session {
+    
+}
+struct SomeIp: Codable {
+    let ip:String
+}
 
 public struct  Instagramm {
     // MARK: - non generic
@@ -52,7 +60,17 @@ public struct  Instagramm {
         let id: String
     }
  
-    
+    struct AccessTokenResponse: Codable {
+        let access_token:String
+        let user:FromBlock
+    }
+    struct MetaCodeInner: Codable {
+        let code:Int
+        let error_message:String
+    }
+    struct MetaResponse: Codable {
+        let meta:MetaCodeInner
+    }
     // the UserBlock covers followers, followings, and requesed-by            
     public  struct UserBlock: Codable,Mergeable,Hashable {
         public static func ==(lhs: Instagramm.UserBlock, rhs: Instagramm.UserBlock) -> Bool {

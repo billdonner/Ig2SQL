@@ -48,7 +48,6 @@
   when all of the tasks for one User are done, the outermost completion callback is finally executed and we move on to the next user on the
   */
  
- var globalBuckets = APIBuckets() // scratch space
  
  final  class InstagramPoller {
     

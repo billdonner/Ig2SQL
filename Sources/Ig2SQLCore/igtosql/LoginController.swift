@@ -23,17 +23,11 @@ enum SMaxxResponseCode: Int {
 /// Instagram Authentication
 ///  inspired by Kitura Credentials and the google and facebook plugins
 ///  however, this is not a plugin and it uses NSURLSession to communicate with Instagram, not the Kitura HTTP library
-struct SessionState {
-    
-}
-struct Session {
-    
-}
+
 import Foundation
 import Kitura
 import KituraNet
 import KituraRequest
-import SwiftyJSON
 import LoggerAPI
 import Dispatch
 
@@ -89,7 +83,7 @@ open class LoginController {
     public init?(tag:String ) throws  {
             self.clientId =  "d7020b2caaf34e13a1ca4bdf1504e4dc"
             self.clientSecret = "81b197d145c1470caeec39fc6ad0b48a"
-            self.callbackUrl =  "http://96.250.76.158:9090/authcallback"
+            self.callbackUrl =  "http://96.250.76.158:9080/authcallback"
             self.callbackPostUrl = "http://igblu.mybluemix.net"
         
     }// init
@@ -182,10 +176,9 @@ extension LoginController {
     public class func discoverIpAddress(completion:@escaping (String) ->()) {
         KituraRequest.request(.get, "https://api.ipify.org?format=json").response {
             request, response, data, error in
-            if let data = data {
-                
-                let jsonBody = JSON(data: data)
-                if let ip = jsonBody["ip"].string {
+            if let data = data ,
+                  let rez = try? Config.jsonDecoder.decode(SomeIp.self, from: data){
+                   let ip = rez.ip
                     completion(ip )
                 }
                 else {
@@ -193,7 +186,7 @@ extension LoginController {
                 }
             }
         }
-    }
+  
     
     ////
     //MARK: Configuration process starts right here:::
@@ -232,13 +225,11 @@ extension LoginController {
     /// OAuth2 steps with Instagram
     
     open func STEP_ONE(_ response: RouterResponse) {
-        let cburl = self.callbackUrl //+ "?nonce=112332123"
-        let loc = "https://api.instagram.com/oauth/authorize/?client_id=\(clientId)&redirect_uri=\(cburl)&response_type=code&scope=\(LoginController.appscope)"
+    let loc =  Instagramm.Router.requestOauthCode.makeURLRequest().url!.absoluteString
         Log.error("STEP_ONE redirecting to Instagram authorization \(loc)")
         // Log in
         do {
             try response.redirect( loc)
-            //completion?(300)
         }
         catch {
             Log.error("Failed to redirect to Instagram login page")
@@ -250,12 +241,9 @@ extension LoginController {
         func inner_two(_ code:String ) {
             let cburl = self.callbackUrl //+ "?nonce=112332133" // deliberat3ly changed
             Log.error("STEP_TWO inner cburl \(cburl) starting with \(code) just received from Instagram")
-            /// OK UP TO THIS POINT
-            
-            //let param = "?client_id=\(clientId)&redirect_uri=\(cburl)&grant_type=authorization_code&client_secret=\(clientSecret)&code=\(code)"
-            //https://api.instagram.com/oauth/access_token
-            
-            
+       
+             //https://api.instagram.com/oauth/access_token
+       
             let params:[String:String] = ["client_id" : "\(clientId)",
                 "redirect_uri": cburl ,
                 "grant_type": "authorization_code",
@@ -277,26 +265,16 @@ extension LoginController {
                             completion?(stat!)
                             return
                         }
-                  
-                    
-                    let jsonBody = JSON(data: data!)
-                    if let token = jsonBody["access_token"].string,
-                        let userid = jsonBody["user"]["id"].string,
-                        let pic = jsonBody["user"]["profile_picture"].string,
-                        let title = jsonBody["user"]["username"].string {
-                        Log.info("STEP_TWO Instagram sent back \(token) and \(title)")
+                   
+                    let rez = try! Config.jsonDecoder.decode(Instagramm.AccessTokenResponse.self, from: data!)
+
+                        Log.info("STEP_TWO Instagram sent back \(rez.access_token) and \(rez.user.id)")
                         /// stash these, creating new object if needed
                         
-                        let smtoken =  (userid + token).hashValue
+                        let smtoken =  (rez.user.id + rez.access_token).hashValue
                         
-                        
-//                        request.session?["userid"].string = userid
-//                        request.session?["smtoken"].string = smtoken
-//                        request.session?["token"].string = token
-//                        request.session?["title"].string = title
-//                        request.session?["pic"].string = pic
                          do {
-                        try zh.setLoginCredentials(smaxxtoken: smtoken, igtoken: token, iguserid: userid, name: title, pic: pic)
+                        try zh.setLoginCredentials(smaxxtoken: smtoken, igtoken: rez.access_token, iguserid: rez.user.id, name: rez.user.username, pic: rez.user.profile_picture)
                         }
                          catch {
                             
@@ -306,17 +284,17 @@ extension LoginController {
                         // w.start(userid,request,response)
                         // see if we can go somewhere interesting
                         
-                        let vv:[String:Any] = ["userid":userid,"smtoken":smtoken,"token":token]
+                        let vv:[String:Any] = ["userid":rez.user.id,"smtoken":smtoken,"token":rez.access_token]
                         self.globalData.usersLoggedOn[smtoken] = vv
                         ///TODO: when done debugging, dont include userid and token in here, the client has no need
-                        let tk = "/unwindor?token=\(token)&userid=\(userid)&smaxx-token=\(smtoken)&smaxx-name=\(title)&smaxx-pic=\(pic)"
+                        let tk = "/unwindor?token=\(rez.access_token)&userid=\(rez.user.id)&smaxx-token=\(smtoken)&smaxx-name=\(rez.user.username)&smaxx-pic=\(rez.user.profile_picture)"
                         do {
                             Log.info("STEP_TWOBEE redirect back to client with \(tk)")
                             try response.redirect(tk)  }
                         catch {
                             Log.error("STEP_TWOBEE   Could not redirect to client \(tk)")
                         }
-                    }
+                    
                     completion?(200)
             }
         }//inner_two
@@ -370,12 +348,10 @@ extension LoginController {
                                    sendErrorResponse(outerresponse, status: 502, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) returned with no data")
                                     return
                                 }
-                                
-                                let jsonBody = JSON(data: data)
-                                let metacode = jsonBody["meta"]["code"].intValue
-                                guard metacode == 200 else {
-                                    let mess = jsonBody["meta"]["error_message"].stringValue
-                                   sendErrorResponse(outerresponse, status: 503, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful meta \(metacode) \(mess)")
+                                let rez = try! Config.jsonDecoder.decode(Instagramm.MetaResponse.self, from: data)
+                              
+                                guard rez.meta.code == 200 else {
+                                   sendErrorResponse(outerresponse, status: 503, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful meta \(rez.meta.code) \(rez.meta.error_message)")
                                     return
                                 }
                                 sendOKResponse(outerresponse,data:["reason" :" INSTAGRAM SAYS  subscriptionPostCallback \(subscriptionVerificationToken) successful"])
