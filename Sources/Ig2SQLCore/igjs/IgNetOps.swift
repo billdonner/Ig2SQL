@@ -8,11 +8,45 @@
 import Foundation
 
 
+
 typealias URLParamsToEncode = [String: AnyObject]
 
 typealias NetCompletionFunc = (_ status: Int, _ object: Data?) -> ()
 
+struct SmaxxResponse: Codable {
+    let status: Int
+    let igid: String
+    let pic:String
+    let smaxxtoken: Int
+    let name:String
+}
 
+struct LoginResponse:Codable {
+    let userid:String
+    let reportname:String
+    let elapsed:TimeInterval
+    let queryParameters:[String:String]
+    let reportHeaders: [ String]
+    let reportData: [[String]]
+}
+struct LoginResponseWrapped:Codable {
+    let status: Int
+    let time: Date
+    let response: LoginResponse
+}
+struct ReportResponse:Codable {
+    let userid:String
+    let reportname:String
+    let elapsed:TimeInterval
+    let queryParameters:[String:String]
+    let reportHeaders: [String]
+    let reportData: [[String]]
+}
+struct ReportResponseWrapped:Codable {
+    let status: Int
+    let time: Date
+    let response: ReportResponse
+}
 struct IGNetOps {
 
 
@@ -60,3 +94,5 @@ struct IGNetOps {
     
    
 } // IgNetOps
+
+

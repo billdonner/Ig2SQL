@@ -40,17 +40,14 @@ struct TraceLog {
         return buffer
     }
 }
-public struct ApiCounters {
+public struct ApiCounters :Codable{
     public  var getIn = 0
     public   var getOut = 0
     public   var postIn = 0
     public   var postOut = 0
-    public   func counters()->[String:Int] {
-        return ["get-in":getIn,"get=out":getOut,"post-in":postIn,"post-out":postOut]
-    }
+ 
 }
 open class GlobalData {
-    open var localConfig:[String:Any] = [:]
     open var apic = ApiCounters()
     open var usersLoggedOn : [Int:[String:Any]] = [:]
     
@@ -72,8 +69,8 @@ struct Config {
     
 }
 
-public  var reportServiceIsBooted = false
-public  var loginServiceIsBooted = false
+ var reportServiceIsBooted = false
+ var loginServiceIsBooted = false
 
 var serverip : String = ""
 
@@ -89,39 +86,7 @@ var lc : LoginController?
 
 var startdate =  Date()
 
-
 var globalBuckets = APIBuckets() // scratch space
-
-/// standard error responses -
-
-struct ErrResponse<T:Codable> : Codable {
-    let status:Int
-    let message:T
-    let timenow:Date
-}
-func  sendErrorResponse(_ response:RouterResponse,status:Int,message:String) {
-    let err = ErrResponse<String>(status: status, message:message, timenow: Date())
-    let jsondata = try!  Config.jsonEncoder.encode(err)
-    response.headers["Content-Type"] = "application/json; charset=utf-8"
-    try! response.status(.badRequest).send(data: jsondata).end()
-}
-func  sendOKResponse(_ response:RouterResponse, data:[String:String]) {
-    let err = ErrResponse<[String:String]>(status: 200, message: data, timenow: Date())
-    let data = try!  Config.jsonEncoder.encode(err)
-    sendOKPreEncoded(response, data: data)
-}
-func    sendOKPreEncoded(_ response: RouterResponse,data:Data)  {
-    response.headers["Content-Type"] = "application/json; charset=utf-8"
-     try! response.status(.OK).send(data:  data).end()
-}
- 
-public  func missingID(_ response:RouterResponse) {
-    sendErrorResponse(response,  status: 404, message: "no id" )
-  
-}
-public   func unkownOP(_ response:RouterResponse) {
-    sendErrorResponse(response, status: 403, message: "bad op")
-}
 
 // MARK:- open db, handle command arguments
 public func cliMain(_ argcv:Argstuff) {
@@ -156,15 +121,14 @@ public func cliMain(_ argcv:Argstuff) {
         if let furl = argcv.modelDirURL?.appendingPathComponent("model").appendingPathExtension("json"),
             let uid = argcv.modelDirURL?.lastPathComponent,
                 let ex = argcv.exportDirURL {
-            makesql(furl: furl,uid: uid, exportURL: ex)
+            SQLMaker.makesql(furl: furl,uid: uid, exportURL: ex)
             exit(0)
         }
         
         
     case .once:
         igPoller = InstagramPoller(tag:"started-\(Date())",
-            cycleTime:0,   usersFileURL: argcv.usersFileURL! ,  modelDirURL: argcv.modelDirURL ,
-            sqlDirURL: argcv.sqlDirURL ,  exportDirURL:argcv.exportDirURL ){ title,status  in
+            cycleTime:0,   exportDirURL:argcv.exportDirURL ){ title,status  in
                 print ("finalcomphandler for bm \(title) \(status)")
         }
         if let thebm = igPoller {
@@ -174,8 +138,7 @@ public func cliMain(_ argcv:Argstuff) {
         }
     case .poller:
         igPoller = InstagramPoller(tag:"started-\(Date())",
-            cycleTime:argcv.cycleSeconds,   usersFileURL: argcv.usersFileURL ,  modelDirURL: argcv.modelDirURL ,
-            sqlDirURL: argcv.sqlDirURL ,  exportDirURL:argcv.exportDirURL ){ title,status  in
+            cycleTime:argcv.cycleSeconds,    exportDirURL:argcv.exportDirURL ){ title,status  in
                 print ("finalcomphandler for bm \(title) \(status)")
         }
         if let thebm = igPoller {
@@ -349,4 +312,35 @@ public struct Fetch {
             fetchViaContentsOfFile(urlstr, session, completion: completion)
         }
     }
+}
+
+/// standard error responses -
+
+struct ErrResponse<T:Codable> : Codable {
+    let status:Int
+    let message:T
+    let timenow:Date
+}
+func  sendErrorResponse(_ response:RouterResponse,status:Int,message:String) {
+    let err = ErrResponse<String>(status: status, message:message, timenow: Date())
+    let jsondata = try!  Config.jsonEncoder.encode(err)
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    try! response.status(.badRequest).send(data: jsondata).end()
+}
+func  sendOKResponse(_ response:RouterResponse, data:[String:String]) {
+    let err = ErrResponse<[String:String]>(status: 200, message: data, timenow: Date())
+    let data = try!  Config.jsonEncoder.encode(err)
+    sendOKPreEncoded(response, data: data)
+}
+func    sendOKPreEncoded(_ response: RouterResponse,data:Data)  {
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    try! response.status(.OK).send(data:  data).end()
+}
+
+public  func missingID(_ response:RouterResponse) {
+    sendErrorResponse(response,  status: 404, message: "no id" )
+    
+}
+public   func unkownOP(_ response:RouterResponse) {
+    sendErrorResponse(response, status: 403, message: "bad op")
 }

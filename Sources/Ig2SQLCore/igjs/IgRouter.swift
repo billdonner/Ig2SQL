@@ -15,9 +15,6 @@ import Foundation
 extension Instagramm {
     enum Router {
         static let baseURLString = "https://api.instagram.com"
-        static let clientID = "d7020b2caaf34e13a1ca4bdf1504e4dc"
-        static let redirectURI = "https://billdonner.com/"
-        static let clientSecret = "81b197d145c1470caeec39fc6ad0b48a"
         
         case selfuserinfo(String)
         
@@ -46,27 +43,7 @@ extension Instagramm {
         case taginfo(String,String)
         case tagrecent(String,String)
         case requestOauthCode
-        
-        static func getAccessTokenRequest (_ code:String) ->  NSMutableURLRequest? {
-            let pathString = "/oauth/access_token"
-            if let url =  URL(string: baseURLString + pathString) {
-                let params = ["client_id": clientID, "client_secret":  clientSecret, "grant_type": "authorization_code", "redirect_uri":  redirectURI, "code": code]
-                var paramString = ""
-                for (key, value) in params {
-                    if let escapedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                        let escapedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-                        paramString += "\(escapedKey)=\(escapedValue)&"
-                    }
-                }
-                
-                let request = NSMutableURLRequest(url:url)
-                request.httpMethod = "POST"
-                request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-                request.httpBody = paramString.data(using: String.Encoding.utf8)
-                return request
-            }
-            return nil
-        }
+
 
         func makeURLRequest()-> URLRequest {
             let result: (path: String, parameters: [String: AnyObject]?) = {
@@ -167,19 +144,17 @@ extension Instagramm {
                     
                     let pathString = "/v1/tags/" + tagName  + "/media/recent"
                     return (pathString, ["access_token": accessToken    ] as [String : AnyObject])
-                    
-                    
+    
                 case .requestOauthCode:
-                    let params = ["client_id": Router.clientID,
+                    let params = ["client_id": lc!.clientId,
                                "scope":"basic likes follower_list comments relationships public_content",
-                                  "redirect_uri":Router.redirectURI,
+                                  "redirect_uri":lc!.callbackUrl,
                                    "response_type":"code"] // server side
                     let pathString = "/oauth/authorize/" //?client_id=" + Router.clientID + "&redirect_uri=" + Router.redirectURI + "&response_type=code"
                     return (pathString, params as [String : AnyObject])
                 }
-            }()
-            let baseURL = URL(string: Router.baseURLString)!
-            let fullurl = baseURL.appendingPathComponent(result.path)
+            }() 
+            let fullurl = URL(string: Router.baseURLString)!.appendingPathComponent(result.path)
             return   encodedRequest(fullurl, params: result.parameters) as URLRequest
         }
         private func encodedRequest(_ fullurl:URL, params:URLParamsToEncode?) -> NSMutableURLRequest {
@@ -316,7 +291,4 @@ extension Instagramm {
             f(status, raw,result  )
         }// result in
     }
-    
-    
-    
 }

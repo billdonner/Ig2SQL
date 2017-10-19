@@ -9,40 +9,6 @@
 import Foundation
 
 
-func makesql(furl:URL,uid:String,exportURL:URL) {
-    do {
-        let data = try Data(contentsOf: furl)
-        let model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
-        let sqlm = SQLMaker(models:[model ])
-        sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
-            let spacer = "\n--\n"
-            let dropmake = "DROP DATABASE IGBASE; CREATE DATABASE IGBASE; USE IGBASE;"
-            let jumboSQL = dropmake + spacer + createSQL + spacer + insertSQL + spacer + temptableSQL + spacer
-            let xd =  exportURL.appendingPathComponent(uid, isDirectory: true)
-            do {
-                try FileManager.default.createDirectory(at: xd, withIntermediateDirectories: true, attributes: [:])
-                
-                let createsqlurl = xd.appendingPathComponent("header.sql")
-                let insertsqlurl = xd.appendingPathComponent("inserts.sql")
-                let temptablesqlurl = xd.appendingPathComponent("temptables.sql")
-                let onefileurl = xd.appendingPathComponent("recreate.sql")
-                try  createSQL.write(to: createsqlurl, atomically: true, encoding: .utf8 )
-                try  insertSQL.write(to: insertsqlurl, atomically: true, encoding: .utf8 )
-                try  temptableSQL.write(to: temptablesqlurl, atomically: true, encoding: .utf8 )
-                try  jumboSQL.write(to: onefileurl, atomically: true, encoding: .utf8 )
-                print()
-                print("Exported all tables to mysql import files")
-                print()
-            }
-            catch {
-                print ("could not write sql files error \(error)")
-            }
-        }
-    }//do
-    catch {
-        print ("could not read model files error \(error)")
-    }
-}
 
 class SQLMaker {
     var obuf = ""
@@ -424,6 +390,42 @@ class SQLMaker {
         let c = gentempTables( )
         finally(c )
     }
+    
+    static func makesql(furl:URL,uid:String,exportURL:URL) {
+        do {
+            let data = try Data(contentsOf: furl)
+            let model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
+            let sqlm = SQLMaker(models:[model ])
+            sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
+                let spacer = "\n--\n"
+                let dropmake = "DROP DATABASE IGBASE; CREATE DATABASE IGBASE; USE IGBASE;"
+                let jumboSQL = dropmake + spacer + createSQL + spacer + insertSQL + spacer + temptableSQL + spacer
+                let xd =  exportURL.appendingPathComponent(uid, isDirectory: true)
+                do {
+                    try FileManager.default.createDirectory(at: xd, withIntermediateDirectories: true, attributes: [:])
+                    
+                    let createsqlurl = xd.appendingPathComponent("header.sql")
+                    let insertsqlurl = xd.appendingPathComponent("inserts.sql")
+                    let temptablesqlurl = xd.appendingPathComponent("temptables.sql")
+                    let onefileurl = xd.appendingPathComponent("recreate.sql")
+                    try  createSQL.write(to: createsqlurl, atomically: true, encoding: .utf8 )
+                    try  insertSQL.write(to: insertsqlurl, atomically: true, encoding: .utf8 )
+                    try  temptableSQL.write(to: temptablesqlurl, atomically: true, encoding: .utf8 )
+                    try  jumboSQL.write(to: onefileurl, atomically: true, encoding: .utf8 )
+                    print()
+                    print("Exported all tables to mysql import files")
+                    print()
+                }
+                catch {
+                    print ("could not write sql files error \(error)")
+                }
+            }
+        }//do
+        catch {
+            print ("could not read model files error \(error)")
+        }
+    }
+
 }
 
 

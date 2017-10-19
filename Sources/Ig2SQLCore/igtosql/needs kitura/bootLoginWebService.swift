@@ -11,30 +11,9 @@ import Kitura
 import KituraRequest
 import LoggerAPI
 
-struct SmaxxResponse: Codable {
-    let status: Int
-    let igid: String
-    let pic:String
-    let smaxxtoken: Int
-    let name:String
-}
-struct LoginResponse:Codable {
-    let userid:String
-    let reportname:String
-    let elapsed:TimeInterval
-    let queryParameters:[String:String]
-    let reportHeaders: [ String]
-    let reportData: [[String]]
-}
-struct LoginResponseWrapped:Codable {
-    let status: Int
-    let time: Date
-    let response: LoginResponse
-}
-
 func bootLoginWebService() {
     
-    print("booting LoginWebService on port \(Config.login_port)")
+    //print("booting LoginWebService on port \(Config.login_port)")
     // Create a new router
     let router = Router()
     do {
@@ -44,47 +23,22 @@ func bootLoginWebService() {
         fatalError("couldnt create logincontroller")
     }
     
-    // Handle HTTP GET requests to /
-    // Serve static content from "public"
-    router.all("/", middleware: StaticFileServer())
+    // Dont Handle HTTP GET requests to /
     
     // JSON Get request
     router.get("/json") {
         request, response, next in
-        var jsonResponse :[String:String] = [:]
-        jsonResponse["framework"]  = "Ig2SQLLoginService"
-        jsonResponse["applicationName"]  = "IG2SQL"
-        jsonResponse["company"]  = "PurplePeople"
-        jsonResponse["organization"]  = "DonnerParties"
-        jsonResponse["location"] = "New York, NY"
-        sendOKResponse(response, data: jsonResponse)
-        next()
-    }
-    
-    // Basic application health check
-    router.get("/loopback") {
-        request, response, next in
-        Log.debug("GET - /loopback route handler...")
-        let result = health.status.toSimpleDictionary()
-        if health.status.state == .UP {
-            try response.send(json: result).end()
-        } else {
-            try response.status(.serviceUnavailable).send(json: result).end()
-        }
-        next()
-    }
-    
-    router.get("/log") { request, response, next in
+        let data :[String:String] =
+            ["framework":"Ig2SQLLoginService",
+             "applicationName": "IG2SQL",
+            "company": "PurplePeople",
+            "organization": "DonnerParties",
+            "location" : "New York, NY"]
+        sendOKResponse(response, data: data)
         
-        guard let lc = lc else { return }
-        let qp = request.queryParameters
-        var json  :[String:String] = ["logged":"\(qp)"]
-        Log.info("LOGLINE \(qp)")
-        json ["timenow"]  = "\(Date())"  
-        sendOKResponse(response, data:json)
-        lc.globalData.apic.getIn += 1
     }
-
+    
+ 
     
     // MARK: Callback GETs and POSTs from IG come here
     ///
@@ -99,19 +53,15 @@ func bootLoginWebService() {
         }
        
         zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
-     
             if isloggedon {
              //let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
             zh.deleteLoginCredentials(smaxxtoken: smtoken)
             lc.globalData.usersLoggedOn[smtoken] = nil
                 sendOKResponse(response, data:["desc":"logged out from here"])
-                next()
-            return
+              
         }
-
             sendErrorResponse(response, status: 402, message: "notloggedon")
-            next()
-            return
+            
         })
     }
     
@@ -133,8 +83,7 @@ func bootLoginWebService() {
                  // if already logged on send back existing record 
                     let jsondata = try!  Config.jsonEncoder.encode(SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name))
                     sendOKPreEncoded(response,data:jsondata)
-                    next()
-                    return
+                  
                 }
                 else
                 {
@@ -246,15 +195,11 @@ func bootLoginWebService() {
         }
         next()
     }
-    
-    Log.error("Smaxx Login Service started on port \(Config.login_port)")
+     
     // Add an HTTP server and connect it to the router
     let srv = Kitura.addHTTPServer(onPort: Config.login_port, with: router)
-    
-    
     srv.started {
-        //self.controllerIsFullyStarted()
-        Log.info("--Server \(serverip)   LoginService started ")
+        Log.info("--Server \(serverip)   LoginService started on port \(Config.login_port) ")
     }
     srv.failed {status in
         Log.error("--Server \(serverip)   LoginService FAILED TO START   status \(status)   ")

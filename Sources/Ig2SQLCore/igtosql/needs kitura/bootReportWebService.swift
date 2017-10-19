@@ -10,19 +10,7 @@ import Foundation
 import Kitura 
 import LoggerAPI
 
-struct ReportResponse:Codable {
-    let userid:String
-    let reportname:String
-    let elapsed:TimeInterval
-    let queryParameters:[String:String]
-    let reportHeaders: [String]
-    let reportData: [[String]]
-}
-struct ReportResponseWrapped:Codable {
-    let status: Int
-    let time: Date
-    let response: ReportResponse
-}
+
 
 func bootReportWebService() {
     
@@ -35,40 +23,25 @@ func bootReportWebService() {
         })
     }
     
-    print("booting ReportWebService on port \(Config.report_port)")
     // Create a new router
     let router = Router()
     
     
-    // Handle HTTP GET requests to /
-    // Serve static content from "public"
-    router.all("/", middleware: StaticFileServer())
+    // Dont Handle HTTP GET requests to /
     
     // JSON Get request
     router.get("/json") {
         request, response, next in
-        var jsonResponse :[String:String] = [:]
-        jsonResponse["framework"]  = "Ig2SQLReportService"
-        jsonResponse["applicationName"]  = "IG2SQL"
-        jsonResponse["company"]  = "PurplePeople"
-        jsonResponse["organization"]  = "DonnerParties"
-        jsonResponse["location"] = "New York, NY"
-        sendOKResponse(response, data: jsonResponse)
+        let data :[String:String] = ["framework":"Ig2SQLReportService",
+       "applicationName": "IG2SQL",
+        "company": "PurplePeople",
+         "organization": "DonnerParties",
+            "location" : "New York, NY"]
+        sendOKResponse(response, data: data)
         next()
     }
     
-    // Basic application health check
-    router.get("/loopback") {
-        request, response, next in
-        Log.debug("GET - /loopback route handler...")
-        let result = health.status.toSimpleDictionary()
-        if health.status.state == .UP {
-            try response.send(json: result).end()
-        } else {
-            try response.status(.serviceUnavailable).send(json: result).end()
-        }
-        next()
-    }
+
     router.get("/report/:id/:name/") {
         request, response, next in
 
@@ -94,7 +67,6 @@ func bootReportWebService() {
                     } // logged on
                     else
                     {
-                        
                         sendErrorResponse(response, status: 400, message: "badrequest")
                         next()
                         return
@@ -162,7 +134,7 @@ func bootReportWebService() {
     
     srv.started {
         //self.controllerIsFullyStarted()
-        Log.info("--Server \(serverip)   ReportService started ")
+        Log.info("--Server \(serverip)   ReportService started on port \(Config.report_port)")
     }
     srv.failed {status in
         Log.error("--Server \(serverip)   ReportService FAILED TO START   status \(status)   ")

@@ -41,10 +41,10 @@ open class LoginController {
     static let appscope = "basic+likes+comments+relationships+follower_list+public_content"
     static let igVerificationToken = "zzABCDEFG0123456789zz"
     
-    fileprivate var clientId : String = ""
-    fileprivate var clientSecret : String = ""
-    fileprivate var callbackUrl : String = ""
-    fileprivate var callbackPostUrl : String = ""
+    var clientId : String = ""
+    var clientSecret : String = ""
+     var callbackUrl : String = ""
+     var callbackPostUrl : String = ""
     
     var fullyInitialized = false
     
@@ -104,32 +104,32 @@ open class LoginController {
     }
     
     /// standard outbound calls -
-    public   func finally(code:Int,data:Data,userid:String,token:String,
-                          request: RouterRequest, response: RouterResponse)
-        
-    {
-        /// now , finally we c
-        
-        guard let what = request.parameters["what"] else { return   missingID(response)  }
-        switch what {
-            
-        case "json" :
-            sloRunningWebService(id: userid, token: token){status,html, dict in
-                do{
-                    let jsonResponse = ["fetchedStatus":status ,"status":status ,"payload":dict,"serverURL":serverip,"time-of-report":"\(Date())"] as [String : Any]
-                    let  data = try   Config.jsonEncoder.encode(jsonResponse)
-                        sendOKPreEncoded(response, data: data)
-                }
-                catch{
-                    print("sloRunningWebService json try failed")
-                }
-                return
-            }
-  
-        default: break
-        }
-        
-    }//finally
+//    public   func finally(code:Int,data:Data,userid:String,token:String,
+//                          request: RouterRequest, response: RouterResponse)
+//        
+//    {
+//        /// now , finally we c
+//        
+//        guard let what = request.parameters["what"] else { return   missingID(response)  }
+//        switch what {
+//            
+//        case "json" :
+//            sloRunningWebService(id: userid, token: token){status,html, dict in
+//                do{
+//                    let jsonResponse = ["fetchedStatus":status ,"status":status ,"payload":dict,"serverURL":serverip,"time-of-report":"\(Date())"] as [String : Any]
+//                    let  data = try   Config.jsonEncoder.encode(jsonResponse)
+//                        sendOKPreEncoded(response, data: data)
+//                }
+//                catch{
+//                    print("sloRunningWebService json try failed")
+//                }
+//                return
+//            }
+//  
+//        default: break
+//        }
+//        
+//    }//finally
  
     
 }
@@ -325,7 +325,7 @@ extension LoginController {
         Log.info(">>>>>make_subscription for \(subscriptionVerificationToken) callback is \(self.callbackPostUrl) ")
         
         
-        let params:[String:Any] = [
+        let params:[String:String] = [
             "access_token" : "\(access_token)",
             "client_id" : "\(self.clientId)",
             "client_secret": "\(self.clientSecret)" ,

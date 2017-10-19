@@ -99,9 +99,9 @@
     var context:String = ""
     let timerqueue = DispatchQueue(label: "com.midnightrambler.timer", attributes:.concurrent)
     var finalcomphandler: UseridStatusCompletionHandler
-    var usersFileURL:  URL?
+   var usersFileURL:  URL?
     var modelDirURL: URL?
-    var sqlDirURL:  URL?
+   var sqlDirURL:  URL?
     var exportDirURL: URL?
     
     // let funcs:[TaskFunc]
@@ -178,16 +178,16 @@
     
     init?( tag:String,
            cycleTime:Int,
-           usersFileURL:  URL?,
-           modelDirURL: URL?,
-           sqlDirURL:  URL?,
+          // usersFileURL:  URL?,
+           //modelDirURL: URL?,
+           //sqlDirURL:  URL?,
            exportDirURL: URL?,
            finalcomphandler: @escaping UseridStatusCompletionHandler) {
         self.context = tag
         // self.funcs = funcs
-        self.usersFileURL =  usersFileURL
-        self.modelDirURL = modelDirURL
-        self.sqlDirURL = sqlDirURL
+        //self.usersFileURL =  usersFileURL
+       // self.modelDirURL = modelDirURL
+        //self.sqlDirURL = sqlDirURL
         self.exportDirURL = exportDirURL
         self.baseCycleTime = cycleTime
         self.finalcomphandler = finalcomphandler
