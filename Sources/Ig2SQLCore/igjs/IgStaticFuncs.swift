@@ -62,7 +62,7 @@ extension Instagramm { // generic static funcs
                 if let jsData = data, status == 200 {
                     // Decode data to object
                     do {
-                        let rez = try Config.jsonDecoder.decode(T.self, from: jsData)
+                        let rez = try GlobalData.jsonDecoder.decode(T.self, from: jsData)
                         //  print("\n\nDecoded realCallWithDataResponse...\n")
                        
                            let meta = rez.meta

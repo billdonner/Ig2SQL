@@ -17,7 +17,7 @@ extension InstagrammModel {
         // write to disk only if there
         
         if let data = data,
-            let dir = igPoller?.modelDirURL?.appendingPathComponent(tag, isDirectory: true){
+            let dir = igPoller?.modelstoreURL?.appendingPathComponent(tag, isDirectory: true){
             let furl = dir.appendingPathComponent("model").appendingPathExtension("json")
             do {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [:])
@@ -32,9 +32,9 @@ extension InstagrammModel {
     public  static func verifyThenSave<T:Codable>(_ m:T,tag:String) -> Bool {
         let e = T.self 
         do {
-            let encodedMaster = try Config.jsonEncoder.encode(m)
+            let encodedMaster = try GlobalData.jsonEncoder.encode(m)
              datawrite(tag:tag,data: encodedMaster)
-            let _ = try  Config.jsonDecoder.decode(e, from: encodedMaster)
+            let _ = try  GlobalData.jsonDecoder.decode(e, from: encodedMaster)
         }
         catch {
             // print ("Coudnt encode/decode \(e)")
@@ -45,7 +45,7 @@ extension InstagrammModel {
 }
 extension InstagramPoller {
  
-    func saveModelAndExportAtBitterEnd(_ uid:String){
+    func saveModelAndExportAtBitterEnd(_ uid:String, exportURL:URL?){
         let expstarttime = Date()
         let succ =    InstagrammModel.verifyThenSave(self.model,tag: uid)
         if !succ {
@@ -64,7 +64,8 @@ extension InstagramPoller {
                 let dropmake = "DROP DATABASE IGBASE; CREATE DATABASE IGBASE; USE IGBASE;"
                 let jumboSQL = dropmake + spacer + createSQL + spacer + insertSQL + spacer + temptableSQL + spacer
                 
-                if let xd = self.exportDirURL?.appendingPathComponent(uid, isDirectory: true){
+                if let xurl = exportURL {
+                    let xd = xurl.appendingPathComponent(uid, isDirectory: true)
                 do {
                     try FileManager.default.createDirectory(at: xd, withIntermediateDirectories: true, attributes: [:])
           

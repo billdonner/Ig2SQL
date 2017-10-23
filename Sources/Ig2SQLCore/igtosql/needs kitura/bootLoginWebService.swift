@@ -44,7 +44,6 @@ func bootLoginWebService() {
     ///
     router.get("/logout")  { request, response, next in
         
-        guard let lc = lc else { return }
         guard let smtokeni = request.queryParameters["smtoken"]  else {
             return  missingID(response)
         }
@@ -54,9 +53,8 @@ func bootLoginWebService() {
        
         zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
             if isloggedon {
-             //let loggedOnData =  lc.globalData.usersLoggedOn[smtoken]
             zh.deleteLoginCredentials(smaxxtoken: smtoken)
-            lc.globalData.usersLoggedOn[smtoken] = nil
+            globalData.usersLoggedOn[smtoken] = nil
                 sendOKResponse(response, data:["desc":"logged out from here"])
               
         }
@@ -71,8 +69,8 @@ func bootLoginWebService() {
         guard let lc = lc else { return }
         guard let smtokenstr =  request.queryParameters["smtoken"] else {
             // if no token passed in then just go for full login
-            lc.globalData.apic.getIn += 1
-            lc.STEP_ONE(response) // will redirect to IG
+            globalData.apic.getIn += 1
+          lc.STEP_ONE(response) // will redirect to IG
             return
         }
         if let smtoken = Int(smtokenstr) {
@@ -81,7 +79,7 @@ func bootLoginWebService() {
           
                 if isloggedon {
                  // if already logged on send back existing record 
-                    let jsondata = try!  Config.jsonEncoder.encode(SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name))
+                    let jsondata = try!  GlobalData.jsonEncoder.encode(SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name))
                     sendOKPreEncoded(response,data:jsondata)
                   
                 }
@@ -89,7 +87,7 @@ func bootLoginWebService() {
                 {
                     // not logged on, so go to step one
                     
-                    lc.globalData.apic.getIn += 1
+                    globalData.apic.getIn += 1
                     lc.STEP_ONE(response) // will redirect to IG
                 }
             })
@@ -118,7 +116,7 @@ func bootLoginWebService() {
             let name = request.queryParameters["smaxx-name"] ?? "no smname"
             let pic = request.queryParameters["smaxx-pic"] ?? "no smpic"
             let dict = SmaxxResponse(status: 201, igid: id, pic: pic, smaxxtoken: smtoken, name: name)
-            let data = try  Config.jsonEncoder.encode(dict)
+            let data = try  GlobalData.jsonEncoder.encode(dict)
            sendOKPreEncoded(response, data: data)
         }
         catch {
@@ -132,14 +130,11 @@ func bootLoginWebService() {
     router.get("/subscribe/:who" ){ request, response, next in
         
         guard let lc = lc else { return }
-        lc.globalData.apic.getIn += 1
+        globalData.apic.getIn += 1
         
         guard let who = request.parameters["who"] else { return   missingID(response)  }
-        
-        //        guard let token = request.parameters["token"] else { return  missingID(response)  }
-        //        guard let rid = request.parameters["id"] else { return  missingID(response)  }
-        
-        let ix = lc.usersHack[who]
+         
+        let ix = globalData.usersHack[who]
         guard let x = ix else {
             return   missingID(response)
         }
@@ -149,7 +144,7 @@ func bootLoginWebService() {
         }
         
         //
-        lc.make_subscription(response,access_token: token,subscriptionVerificationToken: LoginController.igVerificationToken)
+        lc.make_subscription(response,access_token: token,subscriptionVerificationToken: Config.igVerificationToken)
         
         //next()
     }

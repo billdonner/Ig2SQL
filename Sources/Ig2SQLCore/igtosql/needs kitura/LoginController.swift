@@ -11,15 +11,6 @@ struct IgIdent {
 //
 //
 
-enum SMaxxResponseCode: Int {
-    case success = 200
-    case workerNotActive = 538
-    case duplicate = 539
-    case badMemberID = 533
-    case noData = 541
-    case waiting = 542
-    case noToken = 545
-}
 /// Instagram Authentication
 ///  inspired by Kitura Credentials and the google and facebook plugins
 ///  however, this is not a plugin and it uses NSURLSession to communicate with Instagram, not the Kitura HTTP library
@@ -32,33 +23,19 @@ import LoggerAPI
 import Dispatch
 
 open class LoginController {
-    let startdate = Date()
-    // open let configMgr: ConfigurationManager
-    open  var serverConfig: [String:String] = [:] // ServerConfig
-    fileprivate   var jsonEndpointEnabled: Bool = true
-    fileprivate   var jsonEndpointDelay: UInt32 = 0
-    open  let globalData = GlobalData()
+    let startdate = Date() 
     static let appscope = "basic+likes+comments+relationships+follower_list+public_content"
-    static let igVerificationToken = "zzABCDEFG0123456789zz"
-    
+
     var clientId : String = ""
     var clientSecret : String = ""
      var callbackUrl : String = ""
      var callbackPostUrl : String = ""
     
     var fullyInitialized = false
-    
-    // these all come from the config file
-    //var instagramCredentials : InstagramController!
-    //var igApps: [String:[String:String]] = [:]
-    var usersHack: [String:[String:String]] = [:]
-    //var globalProps: [String:String] = [:]
-    //var globalRoutingComponents : [String] = []
+
     
     //MARK:- Globals
     let boottime = Date()
-    var sess: SessionState?
-    var session: Session?
     var activeRoutes:[[String:String]] = []
     
     static let boottime = Date()
@@ -89,49 +66,11 @@ open class LoginController {
     }// init
     
     //MARK: - ///////////// HANDLERS ////////////////////////
-    
-
-    
-    /**
-     * Handler for getting an application/json response.
-     */
-
-    
-
     func sendCallAgainSoon(_ response: RouterResponse) {
         
         sendErrorResponse(response, status: 500, message: "initializing - try again soon")
     }
-    
-    /// standard outbound calls -
-//    public   func finally(code:Int,data:Data,userid:String,token:String,
-//                          request: RouterRequest, response: RouterResponse)
-//        
-//    {
-//        /// now , finally we c
-//        
-//        guard let what = request.parameters["what"] else { return   missingID(response)  }
-//        switch what {
-//            
-//        case "json" :
-//            sloRunningWebService(id: userid, token: token){status,html, dict in
-//                do{
-//                    let jsonResponse = ["fetchedStatus":status ,"status":status ,"payload":dict,"serverURL":serverip,"time-of-report":"\(Date())"] as [String : Any]
-//                    let  data = try   Config.jsonEncoder.encode(jsonResponse)
-//                        sendOKPreEncoded(response, data: data)
-//                }
-//                catch{
-//                    print("sloRunningWebService json try failed")
-//                }
-//                return
-//            }
-//  
-//        default: break
-//        }
-//        
-//    }//finally
- 
-    
+
 }
 
 // doesnt this neesd
@@ -177,7 +116,7 @@ extension LoginController {
         KituraRequest.request(.get, "https://api.ipify.org?format=json").response {
             request, response, data, error in
             if let data = data ,
-                  let rez = try? Config.jsonDecoder.decode(SomeIp.self, from: data){
+                  let rez = try? GlobalData.jsonDecoder.decode(SomeIp.self, from: data){
                    let ip = rez.ip
                     completion(ip )
                 }
@@ -266,7 +205,7 @@ extension LoginController {
                             return
                         }
                    
-                    let rez = try! Config.jsonDecoder.decode(Instagramm.AccessTokenResponse.self, from: data!)
+                    let rez = try! GlobalData.jsonDecoder.decode(Instagramm.AccessTokenResponse.self, from: data!)
 
                         Log.info("STEP_TWO Instagram sent back \(rez.access_token) and \(rez.user.id)")
                         /// stash these, creating new object if needed
@@ -285,7 +224,7 @@ extension LoginController {
                         // see if we can go somewhere interesting
                         
                         let vv:[String:Any] = ["userid":rez.user.id,"smtoken":smtoken,"token":rez.access_token]
-                        self.globalData.usersLoggedOn[smtoken] = vv
+                     globalData.usersLoggedOn[smtoken] = vv
                         ///TODO: when done debugging, dont include userid and token in here, the client has no need
                         let tk = "/unwindor?token=\(rez.access_token)&userid=\(rez.user.id)&smaxx-token=\(smtoken)&smaxx-name=\(rez.user.username)&smaxx-pic=\(rez.user.profile_picture)"
                         do {
@@ -348,7 +287,7 @@ extension LoginController {
                                    sendErrorResponse(outerresponse, status: 502, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) returned with no data")
                                     return
                                 }
-                                let rez = try! Config.jsonDecoder.decode(Instagramm.MetaResponse.self, from: data)
+                                let rez = try! GlobalData.jsonDecoder.decode(Instagramm.MetaResponse.self, from: data)
                               
                                 guard rez.meta.code == 200 else {
                                    sendErrorResponse(outerresponse, status: 503, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful meta \(rez.meta.code) \(rez.meta.error_message)")
@@ -359,86 +298,4 @@ extension LoginController {
     }
     //}
 }
-//// these methods need to run on a different server so they can call and return within a blocking IG call from the main server
-//// fortunately they are essentially static and have their own routes
 
-extension LoginController  {
-    func setupIGPostCallbackRoutes(router:Router) {
-        
-        router.get("/postcallback" ) {
-            request, response, next in
-            self.handle_igsubscribe_challenge_callback(LoginController.igVerificationToken,request: request,response: response)
-            //next()
-        }
-        
-        router.post("/postcallback") {
-            request, response, next in
-            self.handle_igsubscribe_post_callback(request,response: response)
-            //next()
-        }
-    }
-}
-extension LoginController {
-    
-    open func handle_igsubscribe_post_callback (_ request: RouterRequest, response: RouterResponse) {
-        /// parse out the callback we are getting back, its json
-        var userid = "notfound"
-        let t = "\(String(describing: request.body))" // stringify this HORRIBLE
-        let a = t.components(separatedBy:"\"object_id\" = ")
-        if a.count > 1 {
-            let b = a[1].components(separatedBy:";")
-            if b.count  > 1 {
-                userid = b[0]
-            }
-        }
-        Log.error("---->>>>  post handle_igsubscribe_post_callback for user  \(userid)")
-        // member must have access token for instagram api access
-        //       MembersCache.getTokenFromID(id: userid) { token in
-        //        self.rest_make_worker_for(id: userid, token: token!) {_ in
-        //            print("rest make worker for \(userid) \(token!) ")
-        //        }
-        //        }
-    }
-    
-    /// the get is called in the middle of the post verification
-    open func handle_igsubscribe_challenge_callback (_ subscriptionVerificationToken:String ,request: RouterRequest, response: RouterResponse) {
-        
-        
-        /// strip out the challenge parameter and return with this only
-        let ps = request.originalURL.components(separatedBy: "?")
-        // make dictionary
-        var d: [String:String] = [:]
-        if ps.count >= 2 {
-            let pairs = ps[1].components(separatedBy: "&")
-            for pair in pairs {
-                let p = pair.components(separatedBy: "=")
-                if p.count >= 2 {
-                    d[p[0]] = p[1]
-                }
-            }
-            Log.error("---->>>>  get callback for subscriptionVerificationToken  \(subscriptionVerificationToken) dict \(d)")
-            
-            if d["hub.mode"] ==  "subscribe" {
-                if d["hub.verify_token"] == subscriptionVerificationToken {
-                    if  let reply = d["hub.challenge"] {
-                        response.headers["Content-Type"] = "text/plain; charset=utf-8"
-                        let r = response.status(HTTPStatusCode.OK)
-                        do {
-                            let _ =   try r.send(reply).end()
-                            print("-------did send verify response to Instagram")
-                            Log.error("------did send verify response to Instagram")
-                        }
-                        catch {
-                            Log.error("could not send verify response to Instagram")
-                        }
-                        Log.info("Post register GET callback replying with challenge \(reply)")
-                        return
-                    }
-                }
-            }
-        } // >=2
-        else { 
-            Log.error("---->>>>  get callback for subscriptionVerificationToken  \(subscriptionVerificationToken) has no ? args")
-        }
-    }// get  callbac
-}

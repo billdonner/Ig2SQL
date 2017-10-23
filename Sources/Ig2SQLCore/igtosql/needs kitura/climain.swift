@@ -24,56 +24,118 @@ import Health
 import HeliumLogger
 import LoggerAPI
 
-
-struct TraceLog {
-    static var buffer :[String] = []
-    static func bufrd_clear( ) {
-        buffer = []
-    }
-    static func bufrd_print(_ s:String) {
-        buffer += [s]
-    }
-    static func bufrd_print(_ s:[String]) {
-        buffer += s
-    }
-    static func bufrd_contents()->[String] {
-        return buffer
-    }
+struct Config {
+    static let maxMediaCount = 6 // is ignored in sandbox anyway
+    static let dbname = "igbase"
+    static let igVerificationToken = "zzABCDEFG0123456789zz"
+    // verizon routr maps external addr with port 9090 to 192.168.2.2:8080
+    static let report_port   = 8090
+    static let login_port = 8080
+    static let webadmin_port = 8070
+    
 }
-public struct ApiCounters :Codable{
-    public  var getIn = 0
-    public   var getOut = 0
-    public   var postIn = 0
-    public   var postOut = 0
  
-}
 open class GlobalData {
+    
+    static  let jsonDecoder = JSONDecoder()
+    static  let jsonEncoder = JSONEncoder()
+    public struct ApiCounters :Codable{
+        public  var getIn = 0
+        public   var getOut = 0
+        public   var postIn = 0
+        public   var postOut = 0
+        
+    }
     open var apic = ApiCounters()
     open var usersLoggedOn : [Int:[String:Any]] = [:]
-    
+    open var usersHack: [String:[String:String]] = [:]
     public init () {
         
     }
 }
+public enum Doop  {
+    case status
+    case once   // -dModelTopFolderPath  -uUserCredsFilePath [ -insert=1]
+    case poller // -dModelTopFolderPath -uUserCredsFilePath  [-c=600] [ -insert=1]
+    case create // [-force]
+    case force // [-force]
+    case export // -dModelPath -xExportTopFolderPath
+    case report // UIDfor NameofReport
+    case reportService
+    case loginService
+    case adminService
+}
 
-
-struct Config {
-    static let maxMediaCount = 6 // is ignored in sandbox anyway
-    static let dbname = "igbase"
-    static  let jsonDecoder = JSONDecoder()
-    static  let jsonEncoder = JSONEncoder()
+// parse command line, return anything anyone might want in a single  struct
+public struct Argstuff {
+    public var cycleSeconds = 0
+    public var sqlDirURL : URL?
+    public var exportstoreURL : URL?
+    public var modelstoreURL : URL?
+    public var apiFlow: APIFlow = .instagramm // tweaked to instagram only if cyceSeconds > 99 to prevent ig from getting pissed
+    public  var wantsforce: Bool = false
+    public var doop: Doop = .status
+    public  var userID: String = ""
+    public var reportName: ReportKind = .samples
     
-    // verizon routr maps external addr with port 9090 to 192.168.2.2:8080
-    static let report_port   = 8090
-    static let login_port = 8080
+    public init() {
+        
+    }
     
 }
 
+/// each user has a dedicated TasksForUser
+/// the Background Manager round robins between tasks until hitting an API quota limit at which point it moves on to the next user
+/// within the limitations of the api quota, the cycle funcs are executed sequentially until all are completed, then the task sleeps until sufficient time has passed for the quota limit to pass
+
+class  UserTask {
+    let userid: String
+    let igtoken: String
+    //var apiBuckets  = APIBuckets() // must be multiplexed as we switch tasks
+    
+    // runIndex points to task to run
+    //  nil - there is none
+    //  -1 all tasks are run
+    // +n - running task n
+    
+    private var runIndex: Int?  = nil
+    
+    func makeIdle() {
+        runIndex = nil
+    }
+    func makeReady( ) {
+        runIndex = -1
+    }
+    func makeBusy(step:Int) {
+        runIndex = step
+    }
+    func isReady()->Bool {
+        return  runIndex == -1
+    }
+    func isIdle()->Bool {
+        return  runIndex == nil
+    }
+    func isBusy()->Bool {
+        return  runIndex != nil && runIndex != -1
+    }
+    init (userid:String,igtoken:String){
+        self.userid = userid
+        self.igtoken = igtoken
+    }
+    func countApi() {
+        // self.apiBuckets.apicount(1)
+        globalBuckets.apicount(1)
+    }
+}
+
+
+
  var reportServiceIsBooted = false
  var loginServiceIsBooted = false
+ var adminServiceIsBooted = false
 
 var serverip : String = ""
-
+   let globalData = GlobalData()
 var health = Health()
 
 var rk : ReportKind  = .samples
@@ -89,6 +151,22 @@ var startdate =  Date()
 var globalBuckets = APIBuckets() // scratch space
 
 // MARK:- open db, handle command arguments
+
+
+fileprivate func startPolling(_ argcv: Argstuff) {
+    igPoller = InstagramPoller(tag:"started-\(Date())",
+    cycleTime:argcv.cycleSeconds,   modelstoreURL:argcv.modelstoreURL,exportstoreURL:argcv.exportstoreURL ){ title,status  in
+        print ("finalcomphandler for bm \(title) \(status)")
+    }
+    if let thebm = igPoller {
+        let apicycl = APICycle(flow: argcv.apiFlow,   bm: thebm)
+        thebm.perpetualCycle(apiCycle: apicycl, repeating: { tag,status  in
+        } )
+    } else {
+        fatalError("cant start igpoller")
+    }
+}
+
 public func cliMain(_ argcv:Argstuff) {
     
     // processed args passed in
@@ -118,34 +196,17 @@ public func cliMain(_ argcv:Argstuff) {
         exit(0)
         
     case .export:
-        if let furl = argcv.modelDirURL?.appendingPathComponent("model").appendingPathExtension("json"),
-            let uid = argcv.modelDirURL?.lastPathComponent,
-                let ex = argcv.exportDirURL {
+        if let furl = argcv.modelstoreURL?.appendingPathComponent("model").appendingPathExtension("json"),
+            let uid = argcv.modelstoreURL?.lastPathComponent,
+                let ex = argcv.exportstoreURL {
             SQLMaker.makesql(furl: furl,uid: uid, exportURL: ex)
             exit(0)
         }
         
         
-    case .once:
-        igPoller = InstagramPoller(tag:"started-\(Date())",
-            cycleTime:0,   exportDirURL:argcv.exportDirURL ){ title,status  in
-                print ("finalcomphandler for bm \(title) \(status)")
-        }
-        if let thebm = igPoller {
-            let apicycl = APICycle(flow: argcv.apiFlow,   bm: thebm)
-            thebm.perpetualCycle(apiCycle: apicycl, repeating: { tag,status  in
-            } )
-        }
-    case .poller:
-        igPoller = InstagramPoller(tag:"started-\(Date())",
-            cycleTime:argcv.cycleSeconds,    exportDirURL:argcv.exportDirURL ){ title,status  in
-                print ("finalcomphandler for bm \(title) \(status)")
-        }
-        if let thebm = igPoller {
-            let apicycl = APICycle(flow: argcv.apiFlow,   bm: thebm)
-            thebm.perpetualCycle(apiCycle: apicycl, repeating: { tag,status  in
-            } )
-        }
+    case .once,.poller:
+        startPolling(argcv)
+
     case .reportService:
         HeliumLogger.use()
         LoginController.discoverIpAddress() { ip in
@@ -164,6 +225,16 @@ public func cliMain(_ argcv:Argstuff) {
             bootLoginWebService()
             // Start the Kitura runloop (this call never returns)
             loginServiceIsBooted = true
+            Kitura.run()
+        }
+    case .adminService:
+        HeliumLogger.use()
+        
+        LoginController.discoverIpAddress() { ip in
+            serverip = ip
+            bootAdminWebService()
+            // Start the Kitura runloop (this call never returns)
+            adminServiceIsBooted = true
             Kitura.run()
         }
         
@@ -323,13 +394,13 @@ struct ErrResponse<T:Codable> : Codable {
 }
 func  sendErrorResponse(_ response:RouterResponse,status:Int,message:String) {
     let err = ErrResponse<String>(status: status, message:message, timenow: Date())
-    let jsondata = try!  Config.jsonEncoder.encode(err)
+    let jsondata = try!  GlobalData.jsonEncoder.encode(err)
     response.headers["Content-Type"] = "application/json; charset=utf-8"
     try! response.status(.badRequest).send(data: jsondata).end()
 }
 func  sendOKResponse(_ response:RouterResponse, data:[String:String]) {
     let err = ErrResponse<[String:String]>(status: 200, message: data, timenow: Date())
-    let data = try!  Config.jsonEncoder.encode(err)
+    let data = try!  GlobalData.jsonEncoder.encode(err)
     sendOKPreEncoded(response, data: data)
 }
 func    sendOKPreEncoded(_ response: RouterResponse,data:Data)  {

@@ -394,7 +394,7 @@ class SQLMaker {
     static func makesql(furl:URL,uid:String,exportURL:URL) {
         do {
             let data = try Data(contentsOf: furl)
-            let model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
+            let model = try  GlobalData.jsonDecoder.decode(InstagrammModel.self, from: data)
             let sqlm = SQLMaker(models:[model ])
             sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
                 let spacer = "\n--\n"

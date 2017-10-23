@@ -8,7 +8,7 @@
  
  //TODO: integrate endofcycle
  import Foundation
- //cyclesign( uid:String,  _ finally:@escaping UseridStatusCompletionHandler)
+ 
  typealias CompletionHandler =  (Int)->()
  typealias UseridStatusCompletionHandler  = (String,Int)->()
  typealias TaggedStatusRepeatingFunc = (String,Int)->()
@@ -63,16 +63,7 @@
         var secsPerpetualUpCounter = 0
         var apiCountThisCycle = 0
     }
-    struct UsersOnDiskModel:Codable {
-        
-        struct UserCreds :Codable {
-            let name:String
-            let id:String
-            let token:String
-        }
-        let description:String
-        let users:[UserCreds]
-    }
+ 
     deinit {
         timer?.cancel()
         timer = nil
@@ -87,9 +78,9 @@
     
     var model: InstagrammModel!
     //var scratchmem : NonPersistentObjs!
-    var usersOnDisk : UsersOnDiskModel!
-    private var perUserTasks: [PerUserInfo] = []
-    private var thisUserTask : PerUserInfo
+    //var usersOnDisk : UsersOnDiskModel!
+    private var perUserTasks: [UserTask] = []
+    private var thisUserTask : UserTask?
     private var currentUserIndex = -1 {
         didSet {
             // print("Index for Current TaskForUser now \(indexForCurrentTaskForUser)")
@@ -99,18 +90,44 @@
     var context:String = ""
     let timerqueue = DispatchQueue(label: "com.midnightrambler.timer", attributes:.concurrent)
     var finalcomphandler: UseridStatusCompletionHandler
-   var usersFileURL:  URL?
-    var modelDirURL: URL?
-   var sqlDirURL:  URL?
-    var exportDirURL: URL?
+    var modelstoreURL:URL?
+    var exportstoreURL:URL?
+
+    init?( tag:String,
+           cycleTime:Int,
+           modelstoreURL:URL? ,
+           exportstoreURL:URL? ,
+           finalcomphandler: @escaping UseridStatusCompletionHandler) {
+        self.context = tag
+        self.modelstoreURL = modelstoreURL
+        
+        self.exportstoreURL = exportstoreURL
+        self.baseCycleTime = cycleTime
+        self.finalcomphandler = finalcomphandler
+        self.thisUserTask = nil
+        
+        // load users from smax
+        
+        zh.getUsersForSlice(sliceno: 0, slicecount: 1) { smaxxusers in
+            for smaxxuser  in smaxxusers {
+                perUserTasks.append(UserTask(userid: smaxxuser.iguserid, igtoken:smaxxuser.igtoken))
+            }
+            
+            // move to furst user
+            thisUserTask =  perUserTasks.last!
+            currentUserIndex = perUserTasks.count - 1
+            
+        }
+    }
     
-    // let funcs:[TaskFunc]
+    
+    
     func delay(_ delay: Double, closure:@escaping (() -> Void)) {
         timerqueue.asyncAfter(deadline:  .now() + delay) {
             closure()
         }
     }
- 
+    
     // count runnable tasks, there should be only one
     func countRunnable()->Int {
         var runnable = 0
@@ -120,7 +137,7 @@
         return runnable
     }
     
- 
+    
     func bitterend(_ status:Int, _ finally:@escaping UseridStatusCompletionHandler) {
         self.model.lastApiStatus = status
         self.model.cyclestart = self.cyclestarttime
@@ -128,43 +145,43 @@
         self.model.cyclenumber += 1
         let elapsed = String(format:"%0.2f",(self.model.cycleelapsed))
         let expstarttime = Date()
-        self.saveModelAndExportAtBitterEnd(uid)
+        self.saveModelAndExportAtBitterEnd(uid,exportURL: exportstoreURL)
         
         let savetime = String(format:"%0.2f",Date().timeIntervalSince(expstarttime))
         
         dbgprint("  - \(uid) cycle finished status: \(status) apicount: \(globalBuckets.totalcount - cnt.apiCountThisCycle) elpased: \(elapsed) \(savetime) ")
         
-        thisUserTask.makeIdle() // otherwise mark me as idle
-            finally(uid,status)
-            if self.currentUserIndex < self.usersOnDisk.users.count - 1 { // if not last
-                self.cnt.cycleSecsDowncounter = 0 // force immediate
-            }
+        thisUserTask?.makeIdle() // otherwise mark me as idle
+        finally(uid,status)
+        if self.currentUserIndex < self.perUserTasks.count - 1 { // if not last
+            self.cnt.cycleSecsDowncounter = 0 // force immediate
+        }
     }
-    // cycles around to next user, reading model off disk if possible, returns TRUE if last item
+    // cycles around to next user, reading model off disk if possible
     private func setupUserAtIndex(_ idx:Int )  {
         
         // assert(countRunnable() == 0, "setupUserAtIndex should have no running task  on exit")
         // the ig api infrastructure expects these to be set up
-        let item = usersOnDisk.users[idx]
-        Persistence.igToken =  item.token
-        Persistence.igUserID =  item.id
+        let item = perUserTasks[idx]
+        Persistence.igToken =  item.igtoken
+        Persistence.igUserID =  item.userid
         //
         
-        let furl = modelDirURL!.appendingPathComponent(item.id, isDirectory: true).appendingPathComponent("model").appendingPathExtension("json")
-        
+        if  let furl = modelstoreURL?.appendingPathComponent(item.userid, isDirectory: true).appendingPathComponent("model").appendingPathExtension("json") {
+          let ut = perUserTasks[idx]
         do {
             let data = try Data(contentsOf: furl)
-            model = try  Config.jsonDecoder.decode(InstagrammModel.self, from: data)
-            dbgprint("  - \(item.id) cycle start  \(item.name) by reloading  \(idx):\(usersOnDisk.users.count) ")
+            model = try  GlobalData.jsonDecoder.decode(InstagrammModel.self, from: data)
+            dbgprint("  - \(ut.userid) cycle start by reloading  \(idx):\(perUserTasks.count) ")
         }
         catch {
             // if cant find model, make new
-            let user = usersOnDisk.users[idx]
+          
             print ("creating new model because couldnt find modelforuser   modelDirURL: \(furl)")
             model = InstagrammModel() // start clean
-            let succ =    InstagrammModel.verifyThenSave (model,tag:  user.id )
+            let succ =    InstagrammModel.verifyThenSave (model,tag:  ut.userid)
             if !succ {
-                dbgprint("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\( user.id) in \(Date().timeIntervalSince(cyclestarttime))secs")
+                dbgprint("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\(ut.userid) in \(Date().timeIntervalSince(cyclestarttime))secs")
             }
         }//catch
         thisUserTask = self.perUserTasks[idx]
@@ -173,64 +190,30 @@
         //globalBuckets = thisUser.apiBuckets
         //self.model.globalBuckets =   thisUser.apiBuckets
     } // setupuseratindex
-    
-    
-    
-    init?( tag:String,
-           cycleTime:Int,
-          // usersFileURL:  URL?,
-           //modelDirURL: URL?,
-           //sqlDirURL:  URL?,
-           exportDirURL: URL?,
-           finalcomphandler: @escaping UseridStatusCompletionHandler) {
-        self.context = tag
-        // self.funcs = funcs
-        //self.usersFileURL =  usersFileURL
-       // self.modelDirURL = modelDirURL
-        //self.sqlDirURL = sqlDirURL
-        self.exportDirURL = exportDirURL
-        self.baseCycleTime = cycleTime
-        self.finalcomphandler = finalcomphandler
         
-        do {
-            let ufu = try Data.init(contentsOf:usersFileURL!)
-            self.usersOnDisk = try Config.jsonDecoder.decode(UsersOnDiskModel.self, from: ufu)
-            //self.scratchmem = NonPersistentObjs(count:self.usersOnDisk.users.count)
-        }
-        catch {
-            print ("couldnt setup InstagramPoller check usersFileURL: \(usersFileURL!)")
-            return nil
-        }
-        do {
-            // setup tasks array
-            for user in usersOnDisk.users {
-                perUserTasks.append(PerUserInfo(userid: user.id))
-            }
-            // move to furst user
-            thisUserTask =  perUserTasks.last!
-            currentUserIndex = usersOnDisk.users.count - 1
-        }
-    }
-    func apiCountUp () {
-        thisUserTask.countApi()
     }
     
-    private func scanforNextUserTask ( ) -> PerUserInfo? {
+   
+    func apiCountUp () {
+        thisUserTask?.countApi()
+    }
+    
+    private func scanforNextUserTask ( ) -> UserTask? {
         ///we dont really need to scan, the item at current index is what we are working on
         /// right now, there should always be at most one runnable task
         
-        if thisUserTask.isBusy()   {return nil} // do nothing if Im busy
+        if thisUserTask!.isBusy()   {return nil} // do nothing if Im busy
         
         // if im not busy step forward
-         currentUserIndex = ( currentUserIndex + 1) % usersOnDisk.users.count   // go round in circle between all users
+        currentUserIndex = ( currentUserIndex + 1) % perUserTasks.count   // go round in circle between all users
         
         thisUserTask =  perUserTasks[ currentUserIndex]
-        uid = thisUserTask.userid
-        if thisUserTask.isIdle()  || thisUserTask.isReady()  {
+        uid = thisUserTask!.userid
+        if thisUserTask!.isIdle()  || thisUserTask!.isReady()  {
             // poked for a fresh start in here
             
             setupUserAtIndex( currentUserIndex)
-            thisUserTask.makeBusy(step: 0)
+            thisUserTask!.makeBusy(step: 0)
             
             return thisUserTask
         } else
@@ -242,50 +225,50 @@
     
     func perpetualCycle(apiCycle: APICycle, repeating:@escaping TaggedStatusRepeatingFunc) {
         DispatchQueue.global().async {
-     
-        self.apiCycle = apiCycle // remeber
-        
-        self.currentUserIndex = -1 // start with first user IMP
-        if !self.isRunning {
-            // note: at first, nothing is setup so cant get to model.user.id
-            // once only
-            self.isRunning = true
-            self.cnt.cycleSecsDowncounter = 0 // START NOW
             
-            self.timer?.cancel()        // cancel previous timer if any
-            self.timer = DispatchSource.makeTimerSource(queue: self.timerqueue)
-            self.timer?.schedule(deadline: .now(), repeating: .seconds(1))
-            //self.timer?.schedule(deadline: .now() , repeating: .seconds(1) )
-            self.timer?.setEventHandler { //[weak self] in
+            self.apiCycle = apiCycle // remeber
+            
+            self.currentUserIndex = -1 // start with first user IMP
+            if !self.isRunning {
+                // note: at first, nothing is setup so cant get to model.user.id
+                // once only
+                self.isRunning = true
+                self.cnt.cycleSecsDowncounter = 0 // START NOW
                 
-                /// here each second
-                
-                /// incidiental functions periopdically
-                self.cnt.secsPerpetualUpCounter += 1
-                if self.cnt.secsPerpetualUpCounter % 10 == 0 {
-                    // every second
-                    // dbgprint(sec % 60 == 0 ? "!" : "-",  terminator:"" )
-                }
-                if self.cnt.secsPerpetualUpCounter % 120 == 0 {
-                    // every few minutes
-                    //globalBuckets.dumpbuckets()
-                }
-                ////
-                self.cnt.cycleSecsDowncounter -= 1
-                if self.cnt.cycleSecsDowncounter < 0 {
-                    // reset counter
-                    self.cnt.cycleSecsDowncounter = self.baseCycleTime - 1
-                    //// here every cycle secs
-                    self.cnt.apiCountThisCycle =  globalBuckets.totalcount
-                    self.cnt.pollcount += 1
-                    // figure out what to do, and if anything
+                self.timer?.cancel()        // cancel previous timer if any
+                self.timer = DispatchSource.makeTimerSource(queue: self.timerqueue)
+                self.timer?.schedule(deadline: .now(), repeating: .seconds(1))
+                //self.timer?.schedule(deadline: .now() , repeating: .seconds(1) )
+                self.timer?.setEventHandler { //[weak self] in
                     
-                    let task = self.scanforNextUserTask ()
-                    if let _ = task {
-                        self.cyclestarttime = Date()
+                    /// here each second
+                    
+                    /// incidiental functions periopdically
+                    self.cnt.secsPerpetualUpCounter += 1
+                    if self.cnt.secsPerpetualUpCounter % 10 == 0 {
+                        // every second
+                        // dbgprint(sec % 60 == 0 ? "!" : "-",  terminator:"" )
+                    }
+                    if self.cnt.secsPerpetualUpCounter % 120 == 0 {
+                        // every few minutes
+                        //globalBuckets.dumpbuckets()
+                    }
+                    ////
+                    self.cnt.cycleSecsDowncounter -= 1
+                    if self.cnt.cycleSecsDowncounter < 0 {
+                        // reset counter
+                        self.cnt.cycleSecsDowncounter = self.baseCycleTime - 1
+                        //// here every cycle secs
+                        self.cnt.apiCountThisCycle =  globalBuckets.totalcount
+                        self.cnt.pollcount += 1
+                        // figure out what to do, and if anything
+                        
+                        let task = self.scanforNextUserTask ()
+                        if let _ = task {
+                            self.cyclestarttime = Date()
                             // dbgprint("***** 1.1 - \(thisuser) about to executeFullCycleForOneUser \(ix)")
                             apiCycle.main!() { uid, status in
-                          
+                                
                                 self.model.lastApiStatus = status
                                 if status == 200 {
                                     // keep track of whenever we complete successfully
@@ -294,17 +277,17 @@
                                 dbgprint("***** 1.2 - \(uid) finshed  functocall   status \(status)")
                                 repeating (uid,status)
                             }
+                        }
+                        // reset counter
+                        //dont reset self.cnt.cycleSecsDowncounter = self.baseCycleTime
                     }
-                    // reset counter
-                    //dont reset self.cnt.cycleSecsDowncounter = self.baseCycleTime
                 }
+                self.timer?.resume()
+            } // never inited
+            else {
+                // already running in background, so just print
+                print ("CALLING runStandardcycle more than once!!!")
             }
-            self.timer?.resume()
-        } // never inited
-        else {
-            // already running in background, so just print
-            print ("CALLING runStandardcycle more than once!!!")
-        }
         }
     }
  }

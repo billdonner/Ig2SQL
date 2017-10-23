@@ -13,6 +13,14 @@ typealias URLParamsToEncode = [String: AnyObject]
 
 typealias NetCompletionFunc = (_ status: Int, _ object: Data?) -> ()
 
+struct SmaxxUser : Codable {
+    let igtoken:String
+     let iguserid:String
+     let name:String
+     let pic:String
+    let smaxxtoken:String
+}
+
 struct SmaxxResponse: Codable {
     let status: Int
     let igid: String

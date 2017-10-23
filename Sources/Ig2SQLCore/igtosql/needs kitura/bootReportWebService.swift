@@ -58,7 +58,7 @@ func bootReportWebService() {
                         // if already logged on send back existing record
                         // make report, call closure when finished
                         generateReport(id: id,kind:reportKind, qparams: request.queryParameters) { wrappedresponse in
-                            let encoder = Config.jsonEncoder
+                            let encoder = GlobalData.jsonEncoder
                             //encoder.dateEncodingStrategy = .iso8601
                             let jsondata = try! encoder.encode(wrappedresponse)
                             sendOKPreEncoded(response,data:jsondata)
