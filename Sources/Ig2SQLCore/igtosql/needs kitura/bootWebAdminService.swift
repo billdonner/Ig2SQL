@@ -15,7 +15,8 @@ func bootAdminWebService() {
                                                     "applicationName": "IG2SQL",
                                                     "company": "PurplePeople",
                                                     "organization": "DonnerParties",
-                                                    "location" : "New York, NY"]
+                                                    "location" : "New York, NY",
+                                                    "version"  :  Config.version ]
     
     // Create a new router
     let router = Router()

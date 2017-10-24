@@ -189,8 +189,8 @@ class SQLMaker {
     }
     fileprivate func executeFollowersInserts() {
         model.followers.forEach { (  user) in
-            ZH.followerblocksInsert(userid: user.id, iguserid: model.user.id)
-            ZH.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
+            SQLMaker.followerblocksInsert(userid: user.id, iguserid: model.user.id)
+            SQLMaker.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
         }
     }
     fileprivate func genFollowingInserts() {
@@ -204,8 +204,8 @@ class SQLMaker {
     }
     fileprivate func executeFollowingInserts() {
         model.followings.forEach { (  user) in
-            ZH.followingblocksInsert(userid: user.id, iguserid: model.user.id)
-            ZH.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
+            SQLMaker.followingblocksInsert(userid: user.id, iguserid: model.user.id)
+            SQLMaker.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
         }
     }
     fileprivate func genRequestedByInserts() {
@@ -219,8 +219,8 @@ class SQLMaker {
     }
     fileprivate func executeRequestedByInserts() {
         model.requestedby.forEach { (  user) in
-            ZH.requestedbyblocksInsert(userid: user.id, iguserid: model.user.id)
-            ZH.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
+            SQLMaker.requestedbyblocksInsert(userid: user.id, iguserid: model.user.id)
+            SQLMaker.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
         }
     }
  
@@ -277,26 +277,26 @@ class SQLMaker {
         let  data =   model.mediadata
         for (_,media) in data {
             
-            ZH.mediadatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
+            SQLMaker.mediadatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
        
             
             
             
-            media.users_in_photo.forEach({ (uip) in  ZH.userpositionInsert(mediaid :media.id,userid  :uip.user.id,x:Float(uip.position.x),y:Float(uip.position.y),iguserid:model.user.id)
+            media.users_in_photo.forEach({ (uip) in  SQLMaker.userpositionInsert(mediaid :media.id,userid  :uip.user.id,x:Float(uip.position.x),y:Float(uip.position.y),iguserid:model.user.id)
             })
             let x = flattenIGTags(media, userid: model.user.id)
             x.forEach({ (ftp) in
-                ZH.mediaTaggedInsert(mediaid:  ftp.id, tag: cleanup(ftp.tag), iguserid: ftp.user_id)
+                SQLMaker.mediaTaggedInsert(mediaid:  ftp.id, tag: cleanup(ftp.tag), iguserid: ftp.user_id)
             })
             media.images?.forEach({ (key,imagespec) in
-                ZH.mediaImagesInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
+                SQLMaker.mediaImagesInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
             })
             media.videos?.forEach({ (key,imagespec) in
-                ZH.mediaVideosInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
+                SQLMaker.mediaVideosInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
             })
             
             model.likersOf[media.id]?.forEach {  userid in
-                ZH.likersofmediaInsert(mediaid: media.id, userid: userid, iguserid: model.user.id)
+                SQLMaker.likersofmediaInsert(mediaid: media.id, userid: userid, iguserid: model.user.id)
             }
             
             
@@ -305,7 +305,7 @@ class SQLMaker {
   
         model.commentdata.forEach {   arg   in
             let (_,comment) = arg
-            ZH.commentsofmediaInsert(mediaid: comment.id, comment: comment.text, userid: comment.from.id, created_time: comment.created_time, iguserid: model.user.id)
+            SQLMaker.commentsofmediaInsert(mediaid: comment.id, comment: comment.text, userid: comment.from.id, created_time: comment.created_time, iguserid: model.user.id)
         }
     }
     fileprivate func genLikeInserts() {
@@ -316,7 +316,7 @@ class SQLMaker {
          let data = model.likesdata
         for ( _,media) in data {
  
-        ZH.likesdatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
+        SQLMaker.likesdatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
         
         }
       
@@ -329,7 +329,7 @@ class SQLMaker {
     }
     fileprivate func executeAboutMeInserts() {
         let u = model.user
-        ZH.iguserInsert(bio: cleanup(u.bio), username: u.username, full_name: u.full_name, profile_picture: u.profile_picture, website: u.website, iguserid: u.id)
+        SQLMaker.iguserInsert(bio: cleanup(u.bio), username: u.username, full_name: u.full_name, profile_picture: u.profile_picture, website: u.website, iguserid: u.id)
     }
     fileprivate  func genloadDB( )->String {
         obuf = ""
@@ -425,7 +425,261 @@ class SQLMaker {
             print ("could not read model files error \(error)")
         }
     }
-
+    static func likesdatablocksInsert(mediaid  a:String, filter b:String, type c:String,link d:String,countcomments  e:Int, countlikes f:Int,user_has_liked g:Int,  caption_text h:String,caption_created_time i:String,caption_id j:String,caption_from_id k:String,location_id l:UInt64,iguserid m:String,created_time n:String) {
+        
+        let args:[Any] = [a,b,c,d,e,f,g,h,i,j,k,l,m,n ]
+        do {
+            
+            try ZH.insertinto("likesdatablocks",args:args)
+        }
+        catch {
+            print("likesdatablocksInsert w args \(args) failed \(error)")
+        }
+    }
+    
+    static func mediadatablocksInsert(mediaid  a:String, filter b:String, type c:String,link d:String,countcomments  e:Int, countlikes f:Int,user_has_liked g:Int,  caption_text h:String,caption_created_time i:String,caption_id j:String,caption_from_id k:String,location_id l:UInt64,iguserid m:String,created_time n:String) {
+        
+        let args:[Any] = [a,b,c,d,e,f,g,h,i,j,k,l,m,n ]
+        do {
+            
+            try ZH.insertinto("mediadatablocks",args:args)
+        }
+        catch {
+            print("mediadatablocksInsert w args \(args) failed \(error)")
+        }
+    }
+    
+    static func likersofmediaInsert(mediaid a:String,userid b:String,iguserid c:String) {
+        
+        let args:[Any] = [a,b,c ]
+        do {
+            
+            try ZH.insertinto("likersofmedia",args:args)
+        }
+        catch {
+            print("likersofmediaInsert w args \(args) failed \(error)")
+        }
+    }
+    static func commentsofmediaInsert(mediaid a:String,comment b:String,userid c:String, created_time d :String, iguserid e:String) {
+        let args:[Any] = [a,b,c,d,e]
+        do {
+            try ZH.insertinto("commentsofmedia",args:args)
+        }
+        catch {
+            print("commentsofmediaInsert w args \(args) failed \(error)")
+        }
+    }
+    static func mediaTaggedInsert(mediaid a:String,tag b:String,iguserid c:String) {
+        
+        let args:[Any] = [a,b,c ]
+        do {
+            try ZH.insertinto("mediatagged",args:args)
+        }
+        catch {
+            print("mediaTaggedInsert w args \(args) failed \(error)")
+        }
+    }
+    static func mediaVideosInsert(mediaid a:String,url b:String,width c:Int,height d:Int,iguserid e:String) {
+        
+        let args:[Any] = [a,b,c,d,e]
+        do {
+            try ZH.insertinto("mediavideos",args:args)
+        }
+        catch {
+            print("mediavideosInsert w args \(args) failed \(error)")
+        }
+    }
+    static func mediaImagesInsert(mediaid a:String,url b:String,width c:Int,height d:Int,iguserid e:String) {
+        
+        let args:[Any] = [a,b,c,d,e]
+        do {
+            try ZH.insertinto("mediaimages",args:args)
+        }
+        catch {
+            print("mediaimagesInsert w args \(args) failed \(error)")
+        }
+    }
+    static func userpositionInsert(mediaid a:String,userid b:String,x c:Float,y d:Float,iguserid e:String) {
+        
+        let args : [Any] = [a,b,c,d,e]
+        do {
+            try ZH.insertinto("userposition",args:args)
+        }
+        catch {
+            print("userpositionInsert w args \(args) failed \(error)")
+        }
+    }
+    static func userblocksInsert(userid a:String,username b:String,full_name c:String,profile_picture d:String,iguserid e:String) {
+        
+        let args = [a,b,c,d,e]
+        do {
+            try ZH.insertinto("userblocks",args:args)
+        }
+        catch {
+            print("userblocksInsert w args \(args) failed \(error)")
+        }
+    }
+    static  func iguserInsert(bio a:String,username b:String,full_name c:String,profile_picture d:String,website  e:String, iguserid f:String) {
+        
+        let args = [a,b,c,d,e,f]
+        do {
+            try ZH.insertinto("iguser",args:args)
+        }
+        catch {
+            print("iguserInsert w args \(args) failed \(error)")
+        }
+    }
+    static func followingblocksInsert(userid a:String,iguserid b:String) {
+        
+        let args = [a,b ]
+        do {
+            try ZH.insertinto("followingblocks",args:args)
+        }
+        catch {
+            print("followingblocksInsert w args \(args) failed \(error)")
+        }
+    }
+    static  func followerblocksInsert(userid a:String,iguserid b:String) {
+        
+        let args = [a,b ]
+        do {
+            try ZH.insertinto("followerblocks",args:args)
+        }
+        catch {
+            print("followerblocksInsert w args \(args) failed \(error)")
+        }
+    }
+    static  func requestedbyblocksInsert(userid a:String,iguserid b:String) {
+        
+        let args = [a,b ]
+        do {
+            try ZH.insertinto("requestedbyblocks",args:args)
+        }
+        catch {
+            print("requestedbyblocksInsert w args \(args) failed \(error)")
+        }
+    }
+    
+    //
+    
+    static func getUsersForSlice(sliceno:Int,slicecount:Int,atend:([SmaxxUser])->()){
+        var users:[SmaxxUser] = []
+        do {
+            try ZH.iselectfrom("select * from smaxxusers where smaxxtoken % ? = ? ", args: [slicecount,sliceno]) { rows in
+                for row in rows {
+                    let a:[String:Any] = row
+                    let p = a["igtoken"] as? String ?? ""
+                    let q = a["name"] as? String ?? ""
+                    let r = a["pic"] as? String ?? ""
+                    let s = a["iguserid"] as? String ?? ""
+                    let t = a["smaxxtoken"] as? String ?? ""
+                    users.append( SmaxxUser(igtoken:p  , iguserid: s, name: q, pic: r, smaxxtoken: t))
+                }
+                
+            }
+        }
+        catch {
+        }
+        atend(users)
+    }
+    
+    
+    // run the report and copy out the results, call the callback
+    static func rep (stmnt:String,tag:String,  callback:ReportCallback ) throws {
+        let st = Date()
+        var repheader:[String] = []
+        var repdata : [[String]] = []
+        var first = true
+        try ZH.iselectfrom( stmnt, args: [ ]) { rows in
+            
+            for ff in rows {
+                var line:[String] = []
+                if first {
+                    print("REPORT: \(tag) ")
+                    print ("  fields: \(ff.map{$0.key})")
+                    for f in ff {
+                        repheader.append("\(f.0)")
+                    }
+                    print("RESULTS:")
+                }
+                let ny = "\(ff.map{$1})"
+                print (" ",ny)
+                for f in ff {
+                    line.append("\(f.1)")
+                }
+                repdata.append(line)
+                first = false
+            }
+            
+            let elapsed = Date().timeIntervalSince(st)*1000
+            callback(repheader,repdata,elapsed)
+            let x = String(format:"%0.2f",elapsed)
+            print("  \(x)ms READY> ")
+        }
+    }//rep
+    
+    
+    static func getLoginCredentials(smaxxtoken:Int,atend:(Bool, String,String,String,String,String)->()){
+        var p = "p", q = "q", r = "r", s = "s", t = "t"
+        var isin = false
+        do {
+            try ZH.iselectfrom("select * from smaxxusers where smaxxtoken=? limit 1 ", args: [smaxxtoken]) { row in
+                let a:[String:Any] = row [0]
+                p = a["igtoken"] as? String ?? ""
+                q = a["name"] as? String ?? ""
+                r = a["pic"] as? String ?? ""
+                s = a["iguserid"] as? String ?? ""
+                t = a["smaxxtoken"] as? String ?? ""
+                
+                isin = true
+                print("from select \(smaxxtoken) >>>>>>>>>>>>>", row)
+                
+            }
+        }
+        catch {
+        }
+        atend(isin, p,q,r,s,t)
+    }
+    static func setLoginCredentials(smaxxtoken:Int,igtoken:String,iguserid:String,name:String,pic:String) throws {
+        let vals = [igtoken,iguserid,name,pic,smaxxtoken] as [Any]
+        try ZH.insertinto("smaxxusers",args: vals)
+    }
+    static func deleteLoginCredentials(smaxxtoken:Int )  {
+        let b = ZH.deletefrom("smaxxusers",key:"smaxxtoken",val:smaxxtoken)
+        if !b { print("delete from smaxxusers failed")}
+    }
+    
+    
+    
+    static func getModelBlob( iguserid:String,atend:(Bool, String, Date, String )->()){
+        var   q = "q", r  = Date(), s = "s"
+        var isin = false
+        do {
+            try ZH.iselectfrom("select * from smaxxmodels where  iguserid=? limit 1 ", args: [ iguserid]) { row in
+                let a:[String:Any] = row [0]
+                q = a["blob"] as? String ?? ""
+                if let x =  a["time"] as? Date   { r = x }
+                s = a["iguserid"] as? String ?? ""
+                
+                isin = true
+                
+            }
+        }
+        catch {
+        }
+        atend(isin,q,r,s)
+    }
+    static func setModelBlob( iguserid:String,blob:String,time:Date ) throws {
+        let vals = [ iguserid, time, blob] as [Any]
+        try ZH.insertinto("smaxxmodels",args: vals)
+    }
+    static func deleteModelBlobs(iguserid:String)  {
+        let b = ZH.deletefrom("smaxxmodels",key:"iguserid",val:iguserid)
+        if !b { print("delete from smaxxmodels failed")}
+    }
+    
+    
+    
 }
 
 

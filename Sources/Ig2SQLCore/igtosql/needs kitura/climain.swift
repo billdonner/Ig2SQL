@@ -14,17 +14,16 @@
 ///
 ///
 
-import Foundation
-/// import  MySQLDriver
+import Foundation 
 import Kitura
 import KituraRequest
-
 import KituraNet
 import Health
 import HeliumLogger
 import LoggerAPI
 
 struct Config {
+    static let version = "0.0.2"
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
     
@@ -49,12 +48,12 @@ open class GlobalData {
     
     static  let jsonDecoder = JSONDecoder()
     static  let jsonEncoder = JSONEncoder()
+    
     public struct ApiCounters :Codable{
         public  var getIn = 0
         public   var getOut = 0
         public   var postIn = 0
         public   var postOut = 0
-        
     }
     open var serverip : String = ""
     open var apic = ApiCounters()
@@ -82,6 +81,7 @@ public enum Doop  {
     case reportService
     case loginService
     case adminService
+    case version
 }
 
 // parse command line, return anything anyone might want in a single  struct
@@ -94,7 +94,7 @@ public struct Argstuff {
     public  var wantsforce: Bool = false
     public var doop: Doop = .status
     public  var userID: String = ""
-    public var reportName: ReportKind = .samples
+    public var reportName: ReportKind = .topposts
     
     public init() {
         
@@ -146,7 +146,7 @@ class  UserTask {
     }
 }
 
-
+// MARK:- this is the one and only singleton global datat structure
 
 let globalData = GlobalData()
 
@@ -195,6 +195,11 @@ public func cliMain(_ argcv:Argstuff) {
     
     switch argcv.doop {
         
+    case .version:
+        
+        let exec = CommandLine.arguments.reduce("") {result,string in return (result + " " + string) }
+        print("Ig2SQL version \(Config.version) - \(exec) ")
+            exit(0)
     case .report:
         let _ =  ReportKind.anyreport(argcv.userID,name:argcv.reportName ) { headers, data, elapsed  in
             
@@ -225,6 +230,8 @@ public func cliMain(_ argcv:Argstuff) {
         
         
     case .once,.poller:
+        
+        print("Ig2SQL version \(Config.version))")
         startPolling(argcv)
         
     case .reportService:

@@ -35,20 +35,20 @@ import Foundation
 
 func insertallTest( ) {
     
-    ZH.likesdatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:UInt64(234234), iguserid: "12312", created_time: "1234")
+    SQLMaker.likesdatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:UInt64(234234), iguserid: "12312", created_time: "1234")
     
     
-    ZH.mediadatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:  UInt64(234234) , iguserid: "12312", created_time: "1234")
+    SQLMaker.mediadatablocksInsert(mediaid: "3Bfas", filter:  "green", type: "anime", link: "http://ks", countcomments: 3, countlikes: 2, user_has_liked: 1, caption_text: "bigley", caption_created_time: " 000", caption_id: "9999", caption_from_id: "S878", location_id:  UInt64(234234) , iguserid: "12312", created_time: "1234")
     
-    ZH.likersofmediaInsert(mediaid: "3Bfas",userid:  "192839",iguserid: "12312")
-    ZH.commentsofmediaInsert(mediaid: "3Bfas", comment: "oerfecti:", userid:  "192839" , created_time: "000", iguserid: "12312")
-    ZH.mediaTaggedInsert(mediaid: "3Bfas",tag:"FOOTAG", iguserid:  "12312")
-    ZH.mediaVideosInsert(mediaid: "3Bfas", url: "http://vidblah", width: 300, height: 200, iguserid:  "12312")
-    ZH.mediaImagesInsert(mediaid: "3BXZ5", url: "http://blah", width: 300, height: 200, iguserid:  "12312")
-    ZH.userblocksInsert(userid: "192839", username: "bdonner", full_name: "bill donner", profile_picture: "http:billdnner,con", iguserid:  "12312")
-    ZH.iguserInsert(bio:"go away",  username: "bdonner", full_name: "bill donner", profile_picture: "http:billdonner.com", website:"http://billdonner.com", iguserid:  "12312")
-    ZH.followingblocksInsert(userid:"192839", iguserid: "12312")
-    ZH.followerblocksInsert(userid:"192839", iguserid: "12312")
-    ZH.requestedbyblocksInsert(userid:"192839", iguserid: "12312")
+    SQLMaker.likersofmediaInsert(mediaid: "3Bfas",userid:  "192839",iguserid: "12312")
+    SQLMaker.commentsofmediaInsert(mediaid: "3Bfas", comment: "oerfecti:", userid:  "192839" , created_time: "000", iguserid: "12312")
+    SQLMaker.mediaTaggedInsert(mediaid: "3Bfas",tag:"FOOTAG", iguserid:  "12312")
+    SQLMaker.mediaVideosInsert(mediaid: "3Bfas", url: "http://vidblah", width: 300, height: 200, iguserid:  "12312")
+    SQLMaker.mediaImagesInsert(mediaid: "3BXZ5", url: "http://blah", width: 300, height: 200, iguserid:  "12312")
+    SQLMaker.userblocksInsert(userid: "192839", username: "bdonner", full_name: "bill donner", profile_picture: "http:billdnner,con", iguserid:  "12312")
+    SQLMaker.iguserInsert(bio:"go away",  username: "bdonner", full_name: "bill donner", profile_picture: "http:billdonner.com", website:"http://billdonner.com", iguserid:  "12312")
+    SQLMaker.followingblocksInsert(userid:"192839", iguserid: "12312")
+    SQLMaker.followerblocksInsert(userid:"192839", iguserid: "12312")
+    SQLMaker.requestedbyblocksInsert(userid:"192839", iguserid: "12312")
     
 }

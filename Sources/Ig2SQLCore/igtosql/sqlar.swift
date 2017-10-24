@@ -28,6 +28,18 @@ public struct BitsOfMySQL {
      ),*/
     static let eachrow:[String:(String,String)] =
         [
+            
+            "smaxxmodels": (
+                """
+CREATE TABLE smaxxmodels (
+iguserid   VARCHAR (255),
+created_time   VARCHAR (255),
+jsonblob   TEXT,
+ INDEX modelid (iguserid,created_time)
+);
+""","INSERT INTO smaxxmodels ( iguserid,created_time,jsonblob ) VALUES(?,?,?)"
+            
+            ),
             "smaxxusers":(
                 """
 CREATE TABLE smaxxusers (
@@ -326,14 +338,7 @@ public struct ZH {
         return true
     }
     
-    public func printcounts(_ table:String,args:[Any]) throws {
-        
-        try ZH.iselectfrom("select count(*)from \(table)", args: args) { row in
-            let r = row[0]
-            let (_,t) = r.first!
-            print ("\(table) - \(t)")
-        }
-    }
+
     
     public  static func iselectfrom(_  s:String,args:[Any],each:(MySQL.ResultSet)->()) throws {
         
@@ -362,16 +367,6 @@ public struct ZH {
     enum CredentialsError: Error {
         case smaxxnotfound
     }
-    func isLoggedIn(smaxxtoken:Int,atend:@escaping (Bool)->()){
-        var success = false
-        do {
-            try ZH.iselectfrom("select * from smaxxusers where smaxxtoken=?", args: [smaxxtoken]) { _ in
-                success = true
-            }
-        }
-        catch {  }
-        atend(success)
-    }
 
 
      static func createallTables() {
@@ -384,140 +379,7 @@ public struct ZH {
             }
         })
     }
-    static func likesdatablocksInsert(mediaid  a:String, filter b:String, type c:String,link d:String,countcomments  e:Int, countlikes f:Int,user_has_liked g:Int,  caption_text h:String,caption_created_time i:String,caption_id j:String,caption_from_id k:String,location_id l:UInt64,iguserid m:String,created_time n:String) {
-        
-        let args:[Any] = [a,b,c,d,e,f,g,h,i,j,k,l,m,n ]
-        do {
-            
-            try ZH.insertinto("likesdatablocks",args:args)
-        }
-        catch {
-            print("likesdatablocksInsert w args \(args) failed \(error)")
-        }
-    }
     
-    static func mediadatablocksInsert(mediaid  a:String, filter b:String, type c:String,link d:String,countcomments  e:Int, countlikes f:Int,user_has_liked g:Int,  caption_text h:String,caption_created_time i:String,caption_id j:String,caption_from_id k:String,location_id l:UInt64,iguserid m:String,created_time n:String) {
-        
-        let args:[Any] = [a,b,c,d,e,f,g,h,i,j,k,l,m,n ]
-        do {
-            
-            try ZH.insertinto("mediadatablocks",args:args)
-        }
-        catch {
-            print("mediadatablocksInsert w args \(args) failed \(error)")
-        }
-    }
-    
-    static func likersofmediaInsert(mediaid a:String,userid b:String,iguserid c:String) {
-        
-        let args:[Any] = [a,b,c ]
-        do {
-            
-            try ZH.insertinto("likersofmedia",args:args)
-        }
-        catch {
-            print("likersofmediaInsert w args \(args) failed \(error)")
-        }
-    }
-    static func commentsofmediaInsert(mediaid a:String,comment b:String,userid c:String, created_time d :String, iguserid e:String) {
-        let args:[Any] = [a,b,c,d,e]
-        do {
-            try ZH.insertinto("commentsofmedia",args:args)
-        }
-        catch {
-            print("commentsofmediaInsert w args \(args) failed \(error)")
-        }
-    }
-    static func mediaTaggedInsert(mediaid a:String,tag b:String,iguserid c:String) {
-        
-        let args:[Any] = [a,b,c ]
-        do {
-            try ZH.insertinto("mediatagged",args:args)
-        }
-        catch {
-            print("mediaTaggedInsert w args \(args) failed \(error)")
-        }
-    }
-    static func mediaVideosInsert(mediaid a:String,url b:String,width c:Int,height d:Int,iguserid e:String) {
-        
-        let args:[Any] = [a,b,c,d,e]
-        do {
-            try ZH.insertinto("mediavideos",args:args)
-        }
-        catch {
-            print("mediavideosInsert w args \(args) failed \(error)")
-        }
-    }
-    static func mediaImagesInsert(mediaid a:String,url b:String,width c:Int,height d:Int,iguserid e:String) {
-        
-        let args:[Any] = [a,b,c,d,e]
-        do {
-            try ZH.insertinto("mediaimages",args:args)
-        }
-        catch {
-            print("mediaimagesInsert w args \(args) failed \(error)")
-        }
-    }
-    static func userpositionInsert(mediaid a:String,userid b:String,x c:Float,y d:Float,iguserid e:String) {
-        
-        let args : [Any] = [a,b,c,d,e]
-        do {
-            try ZH.insertinto("userposition",args:args)
-        }
-        catch {
-            print("userpositionInsert w args \(args) failed \(error)")
-        }
-    }
-    static func userblocksInsert(userid a:String,username b:String,full_name c:String,profile_picture d:String,iguserid e:String) {
-        
-        let args = [a,b,c,d,e]
-        do {
-            try ZH.insertinto("userblocks",args:args)
-        }
-        catch {
-            print("userblocksInsert w args \(args) failed \(error)")
-        }
-    }
-   static  func iguserInsert(bio a:String,username b:String,full_name c:String,profile_picture d:String,website  e:String, iguserid f:String) {
-        
-        let args = [a,b,c,d,e,f]
-        do {
-            try ZH.insertinto("iguser",args:args)
-        }
-        catch {
-            print("iguserInsert w args \(args) failed \(error)")
-        }
-    }
-    static func followingblocksInsert(userid a:String,iguserid b:String) {
-        
-        let args = [a,b ]
-        do {
-            try ZH.insertinto("followingblocks",args:args)
-        }
-        catch {
-            print("followingblocksInsert w args \(args) failed \(error)")
-        }
-    }
-   static  func followerblocksInsert(userid a:String,iguserid b:String) {
-        
-        let args = [a,b ]
-        do {
-            try ZH.insertinto("followerblocks",args:args)
-        }
-        catch {
-            print("followerblocksInsert w args \(args) failed \(error)")
-        }
-    }
-   static  func requestedbyblocksInsert(userid a:String,iguserid b:String) {
-        
-        let args = [a,b ]
-        do {
-            try ZH.insertinto("requestedbyblocks",args:args)
-        }
-        catch {
-            print("requestedbyblocksInsert w args \(args) failed \(error)")
-        }
-    }
     
 }// end ZH
 

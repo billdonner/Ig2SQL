@@ -47,26 +47,7 @@
   
   when all of the tasks for one User are done, the outermost completion callback is finally executed and we move on to the next user on the
   */
- func getUsersForSlice(sliceno:Int,slicecount:Int,atend:([SmaxxUser])->()){
-    var users:[SmaxxUser] = []
-    do {
-        try ZH.iselectfrom("select * from smaxxusers where smaxxtoken % ? = ? ", args: [slicecount,sliceno]) { rows in
-            for row in rows {
-                let a:[String:Any] = row
-                let p = a["igtoken"] as? String ?? ""
-                let q = a["name"] as? String ?? ""
-                let r = a["pic"] as? String ?? ""
-                let s = a["iguserid"] as? String ?? ""
-                let t = a["smaxxtoken"] as? String ?? ""
-                users.append( SmaxxUser(igtoken:p  , iguserid: s, name: q, pic: r, smaxxtoken: t))
-            }
-            
-        }
-    }
-    catch {
-    }
-    atend(users)
- }
+
  
  final  class InstagramPoller {
     
@@ -124,7 +105,7 @@
         
         // load users from smax
         
-        getUsersForSlice(sliceno: 0, slicecount: 1) { smaxxusers in
+        SQLMaker.getUsersForSlice(sliceno: 0, slicecount: 1) { smaxxusers in
             for smaxxuser  in smaxxusers {
                 perUserTasks.append(UserTask(userid: smaxxuser.iguserid, igtoken:smaxxuser.igtoken))
             }
@@ -195,7 +176,7 @@
           
             print ("creating new model because couldnt find modelforuser   modelDirURL: \(furl)")
             model = InstagrammModel() // start clean
-            let succ =    InstagrammModel.verifyThenSave (model,tag:  ut.userid)
+            let succ =    InstagrammModel.writeModelAsJSON (model,iguserid:  ut.userid)
             if !succ {
                 dbgprint("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\(ut.userid) in \(Date().timeIntervalSince(cyclestarttime))secs")
             }

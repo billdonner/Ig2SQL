@@ -9,34 +9,22 @@
 import Foundation
 
 extension InstagrammModel {
- 
-    static let df = DateFormatter()
+
+
     
-  static func datawrite(tag:String,data:Data?) {
-        // write to disk only if there
-        
-//        if let data = data,
-//            let dir = igPoller?.modelstoreURL?.appendingPathComponent(tag, isDirectory: true){
-//            let furl = dir.appendingPathComponent("model").appendingPathExtension("json")
-//            do {
-//                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [:])
-//                try data.write(to: furl, options:[])
-//                
-//            }
-//            catch {
-//                print("Could not persist file \(furl) error \(error)")
-//            }
-//        }
-    }
-    public  static func verifyThenSave<T:Codable>(_ m:T,tag:String) -> Bool {
+    public  static func writeModelAsJSON<T:Codable>(_ m:T,iguserid:String) -> Bool {
         let e = T.self 
         do {
             let encodedMaster = try GlobalData.jsonEncoder.encode(m)
-             datawrite(tag:tag,data: encodedMaster)
+            if let str = String.init(data: encodedMaster, encoding: .utf8)  {
+              try SQLMaker.setModelBlob( iguserid: iguserid, blob: str, time: Date())
             let _ = try  GlobalData.jsonDecoder.decode(e, from: encodedMaster)
+            }
+            else {
+                return false
+            }
         }
-        catch {
-            // print ("Coudnt encode/decode \(e)")
+        catch { 
             return false
         }
         return true
@@ -81,7 +69,7 @@ extension InstagramPoller {
     }
     func saveModelAndExportAtBitterEnd(_ uid:String){
         let expstarttime = Date()
-        let succ =    InstagrammModel.verifyThenSave(self.model,tag: uid)
+        let succ =    InstagrammModel.writeModelAsJSON(self.model,iguserid: uid)
         
             NSLog("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\(uid) in \(Date().timeIntervalSince(expstarttime))secs")
         }

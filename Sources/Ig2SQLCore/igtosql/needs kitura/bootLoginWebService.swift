@@ -21,7 +21,8 @@ fileprivate class LoginController {
          "applicationName": "IG2SQL",
          "company": "PurplePeople",
          "organization": "DonnerParties",
-         "location" : "New York, NY"]
+         "location" : "New York, NY",
+         "version"  :  Config.version ]
     
     static let boottime = Date()
     static let appscope = "basic+likes+comments+relationships+follower_list+public_content"
@@ -48,35 +49,7 @@ fileprivate class LoginController {
         self.fullyInitialized = true
     }
 }
-func getLoginCredentials(smaxxtoken:Int,atend:(Bool, String,String,String,String,String)->()){
-    var p = "p", q = "q", r = "r", s = "s", t = "t"
-    var isin = false
-    do {
-        try ZH.iselectfrom("select * from smaxxusers where smaxxtoken=? limit 1 ", args: [smaxxtoken]) { row in
-            let a:[String:Any] = row [0]
-            p = a["igtoken"] as? String ?? ""
-            q = a["name"] as? String ?? ""
-            r = a["pic"] as? String ?? ""
-            s = a["iguserid"] as? String ?? ""
-            t = a["smaxxtoken"] as? String ?? ""
-            
-            isin = true
-            print("from select \(smaxxtoken) >>>>>>>>>>>>>", row)
-            
-        }
-    }
-    catch {
-    }
-    atend(isin, p,q,r,s,t)
-}
-func setLoginCredentials(smaxxtoken:Int,igtoken:String,iguserid:String,name:String,pic:String) throws {
-    let vals = [igtoken,iguserid,name,pic,smaxxtoken] as [Any]
-    try ZH.insertinto("smaxxusers",args: vals)
-}
-func deleteLoginCredentials(smaxxtoken:Int )  {
-    let b = ZH.deletefrom("smaxxusers",key:"smaxxtoken",val:smaxxtoken)
-    if !b { print("delete from smaxxusers failed")}
-}
+
 // doesnt this neesd
 
 
@@ -199,7 +172,7 @@ extension LoginController {
                     
                     let smtoken =  (rez.user.id + rez.access_token).hashValue
                     do {
-                        try setLoginCredentials(smaxxtoken: smtoken, igtoken: rez.access_token, iguserid: rez.user.id, name: rez.user.username, pic: rez.user.profile_picture)
+                        try SQLMaker.setLoginCredentials(smaxxtoken: smtoken, igtoken: rez.access_token, iguserid: rez.user.id, name: rez.user.username, pic: rez.user.profile_picture)
                     }
                     catch {
                         Log.error("STEP_TWOBEE  processInstagramResponse could not set logincredentials")// \(request.session)")
@@ -310,9 +283,9 @@ func bootLoginWebService() {
             return  missingID(response)
         }
         
-       getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+       SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
             if isloggedon {
-                deleteLoginCredentials(smaxxtoken: smtoken)
+                SQLMaker.deleteLoginCredentials(smaxxtoken: smtoken)
                 globalData.usersLoggedOn[smtoken] = nil
                 sendOKResponse(response, data:["desc":"logged out from here"])
                 
@@ -333,7 +306,7 @@ func bootLoginWebService() {
         }
         if let smtoken = Int(smtokenstr) {
             // call sql service to read record keyed by 'smtoken'
-           getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+           SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
                 
                 if isloggedon {
                     // if already logged on send back existing record

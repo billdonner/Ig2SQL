@@ -15,7 +15,8 @@ func bootReportWebService() {
                                                      "applicationName": "IG2SQL",
                                                      "company": "PurplePeople",
                                                      "organization": "DonnerParties",
-                                                     "location" : "New York, NY"]
+                                                     "location" : "New York, NY",
+                                                     "version"  :  Config.version ]
     
     
     func generateReport (id:String,kind:ReportKind,qparams:[String:String], finally:((ReportResponseWrapped)->())) {
@@ -52,7 +53,7 @@ func bootReportWebService() {
             }
             if let smtoken = Int(smtokenstr) {
                 // call sql service to read record keyed by 'smtoken'
-                getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+                SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
                     if isloggedon {
                         // if already logged on send back existing record
                         // make report, call closure when finished
