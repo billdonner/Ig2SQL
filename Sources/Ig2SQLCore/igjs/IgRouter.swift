@@ -42,7 +42,7 @@ extension Instagramm {
         
         case taginfo(String,String)
         case tagrecent(String,String)
-        case requestOauthCode
+        case requestOauthCode(String,String)
 
 
         func makeURLRequest()-> URLRequest {
@@ -145,10 +145,10 @@ extension Instagramm {
                     let pathString = "/v1/tags/" + tagName  + "/media/recent"
                     return (pathString, ["access_token": accessToken    ] as [String : AnyObject])
     
-                case .requestOauthCode:
-                    let params = ["client_id": lc!.clientId,
+                case .requestOauthCode( let clientId  , let callbackUrl  ):
+                    let params = ["client_id": clientId,
                                "scope":"basic likes follower_list comments relationships public_content",
-                                  "redirect_uri":lc!.callbackUrl,
+                                  "redirect_uri": callbackUrl,
                                    "response_type":"code"] // server side
                     let pathString = "/oauth/authorize/" //?client_id=" + Router.clientID + "&redirect_uri=" + Router.redirectURI + "&response_type=code"
                     return (pathString, params as [String : AnyObject])
@@ -281,13 +281,6 @@ extension Instagramm {
     public    static  func getUserInfo(   _ f:@escaping (Int, Data?,Instagramm.Bdrenv?)->() ) {
         let request =  Instagramm.Router.selfuserinfo(Persistence.igToken!).makeURLRequest()
         Instagramm.performRemoteCallAndResponse (request:request ) { (status:Int, raw:Data?, result:Instagramm.Bdrenv?) in
-            f(status, raw,result  )
-        }// result in
-    }
-    // only useful with serverflow
-    public    static  func getTokens(_ code:String , _ sample:  Instagramm.Ldrenv?  ,   _ f:@escaping (Int,Data?, Instagramm.Ldrenv?)->() ) {
-        let request =  Instagramm.Router.requestOauthCode.makeURLRequest()
-        Instagramm.performRemoteCallAndResponse (request:request ) { ( status:Int,raw:Data?, result: Instagramm.Ldrenv?) in
             f(status, raw,result  )
         }// result in
     }

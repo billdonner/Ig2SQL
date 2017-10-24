@@ -73,7 +73,7 @@ struct IGNetOps {
                 let remains = response.allHeaderFields["x-ratelimit-remaining"] as? String {
                     let ratelimit = Int(lim) ?? 0
                     let rateremain = Int(remains) ?? 0
-                    globalBuckets.xrated(limit: ratelimit, remaining: rateremain, apistatus: response.statusCode)
+                    globalData.bkts.xrated(limit: ratelimit, remaining: rateremain, apistatus: response.statusCode)
               
                     NSLog("-\(Persistence.igUserID) dataTask \(responsecode) \(method) \(String(describing: rul)) hdrs \(ratelimit):\(rateremain)")
                 } else {

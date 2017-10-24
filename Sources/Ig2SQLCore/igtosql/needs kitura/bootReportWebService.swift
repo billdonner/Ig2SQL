@@ -10,12 +10,16 @@ import Foundation
 import Kitura 
 import LoggerAPI
 
-
-
 func bootReportWebService() {
+    let reportserviceDescription :[String:String] = ["framework":"Ig2SQLReportService",
+                                                     "applicationName": "IG2SQL",
+                                                     "company": "PurplePeople",
+                                                     "organization": "DonnerParties",
+                                                     "location" : "New York, NY"]
+    
     
     func generateReport (id:String,kind:ReportKind,qparams:[String:String], finally:((ReportResponseWrapped)->())) {
-        let _ = rk.anyreport(id ,name:kind,callback: { reportheaders, reportdata, elapsed in
+        let _ = ReportKind.anyreport(id ,name:kind,callback: { reportheaders, reportdata, elapsed in
             let rm =  ReportResponse(userid: id,reportname: "\(kind)", elapsed:elapsed,
                                      queryParameters:qparams, reportHeaders:reportheaders, reportData:  reportdata )
             let wr = ReportResponseWrapped(status: 200, time: Date(), response: rm)
@@ -32,19 +36,14 @@ func bootReportWebService() {
     // JSON Get request
     router.get("/json") {
         request, response, next in
-        let data :[String:String] = ["framework":"Ig2SQLReportService",
-       "applicationName": "IG2SQL",
-        "company": "PurplePeople",
-         "organization": "DonnerParties",
-            "location" : "New York, NY"]
-        sendOKResponse(response, data: data)
+        sendOKResponse(response, data:  reportserviceDescription)
         next()
     }
     
-
+    
     router.get("/report/:id/:name/") {
         request, response, next in
-
+        
         if let id = request.parameters["id"],
             let name = request.parameters["name"],
             let reportKind = ReportKind.make(s: name) {
@@ -53,7 +52,7 @@ func bootReportWebService() {
             }
             if let smtoken = Int(smtokenstr) {
                 // call sql service to read record keyed by 'smtoken'
-                zh.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+                getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
                     if isloggedon {
                         // if already logged on send back existing record
                         // make report, call closure when finished
@@ -134,10 +133,10 @@ func bootReportWebService() {
     
     srv.started {
         //self.controllerIsFullyStarted()
-        Log.info("--Server \(serverip)   ReportService started on port \(Config.report_port)")
+        Log.info("--Server \(globalData.serverip)   ReportService started on port \(Config.report_port)")
     }
     srv.failed {status in
-        Log.error("--Server \(serverip)   ReportService FAILED TO START   status \(status)   ")
+        Log.error("--Server \(globalData.serverip)   ReportService FAILED TO START   status \(status)   ")
         exit(1)
     }
 }

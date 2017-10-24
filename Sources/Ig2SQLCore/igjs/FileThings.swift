@@ -9,25 +9,24 @@
 import Foundation
 
 extension InstagrammModel {
-    /// wow, we only need one pair of these ever
  
     static let df = DateFormatter()
     
   static func datawrite(tag:String,data:Data?) {
         // write to disk only if there
         
-        if let data = data,
-            let dir = igPoller?.modelstoreURL?.appendingPathComponent(tag, isDirectory: true){
-            let furl = dir.appendingPathComponent("model").appendingPathExtension("json")
-            do {
-                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [:])
-                try data.write(to: furl, options:[])
-                
-            }
-            catch {
-                print("Could not persist file \(furl) error \(error)")
-            }
-        }
+//        if let data = data,
+//            let dir = igPoller?.modelstoreURL?.appendingPathComponent(tag, isDirectory: true){
+//            let furl = dir.appendingPathComponent("model").appendingPathExtension("json")
+//            do {
+//                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [:])
+//                try data.write(to: furl, options:[])
+//                
+//            }
+//            catch {
+//                print("Could not persist file \(furl) error \(error)")
+//            }
+//        }
     }
     public  static func verifyThenSave<T:Codable>(_ m:T,tag:String) -> Bool {
         let e = T.self 
@@ -45,47 +44,47 @@ extension InstagrammModel {
 }
 extension InstagramPoller {
  
-    func saveModelAndExportAtBitterEnd(_ uid:String, exportURL:URL?){
-        let expstarttime = Date()
-        let succ =    InstagrammModel.verifyThenSave(self.model,tag: uid)
-        if !succ {
-            NSLog("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\(uid) in \(Date().timeIntervalSince(expstarttime))secs")
-        } else {
-            // gather up all top level models and pass them in
-            let sqlm = SQLMaker(models:[self.model])
-            sqlm.executeNativeSql() { temptableSQL in
-                print()
-                print("Created all tables and did native mysql inserts ")
-                print()
-            }
-           
-            sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
-                let spacer = "\n--\n"
-                let dropmake = "DROP DATABASE IGBASE; CREATE DATABASE IGBASE; USE IGBASE;"
-                let jumboSQL = dropmake + spacer + createSQL + spacer + insertSQL + spacer + temptableSQL + spacer
-                
-                if let xurl = exportURL {
-                    let xd = xurl.appendingPathComponent(uid, isDirectory: true)
+    func xpo(exportURL:URL?) {
+        // gather up all top level models and pass them in
+        let sqlm = SQLMaker(models:[self.model])
+        sqlm.executeNativeSql() { temptableSQL in
+            print()
+            print("Created all tables and did native mysql inserts ")
+            print()
+        }
+        
+        sqlm.generateNativeSql( ){ createSQL, insertSQL , temptableSQL in
+            let spacer = "\n--\n"
+            let dropmake = "DROP DATABASE IGBASE; CREATE DATABASE IGBASE; USE IGBASE;"
+            let jumboSQL = dropmake + spacer + createSQL + spacer + insertSQL + spacer + temptableSQL + spacer
+            
+            if let xurl = exportURL {
+                let xd = xurl.appendingPathComponent(uid, isDirectory: true)
                 do {
                     try FileManager.default.createDirectory(at: xd, withIntermediateDirectories: true, attributes: [:])
-          
-                let createsqlurl = xd.appendingPathComponent("header.sql")
-                let insertsqlurl = xd.appendingPathComponent("inserts.sql")
-                let temptablesqlurl = xd.appendingPathComponent("temptables.sql")
-                let onefileurl = xd.appendingPathComponent("recreate.sql")
-               
+                    
+                    let createsqlurl = xd.appendingPathComponent("header.sql")
+                    let insertsqlurl = xd.appendingPathComponent("inserts.sql")
+                    let temptablesqlurl = xd.appendingPathComponent("temptables.sql")
+                    let onefileurl = xd.appendingPathComponent("recreate.sql")
+                    
                     try  createSQL.write(to: createsqlurl, atomically: true, encoding: .utf8 )
-                   try  insertSQL.write(to: insertsqlurl, atomically: true, encoding: .utf8 )
+                    try  insertSQL.write(to: insertsqlurl, atomically: true, encoding: .utf8 )
                     try  temptableSQL.write(to: temptablesqlurl, atomically: true, encoding: .utf8 )
                     try  jumboSQL.write(to: onefileurl, atomically: true, encoding: .utf8 )
                 }
                 catch {
                     print ("could not write sql files error \(error)")
                 }
-                }
             }
         }
     }
+    func saveModelAndExportAtBitterEnd(_ uid:String){
+        let expstarttime = Date()
+        let succ =    InstagrammModel.verifyThenSave(self.model,tag: uid)
+        
+            NSLog("completed \(succ ? "pass":"fail") exportVerifiedModel Model-\(uid) in \(Date().timeIntervalSince(expstarttime))secs")
+        }
 }
 // MARK: - not generic  static funcs
 extension Instagramm { // not generic static funcs

@@ -47,7 +47,26 @@
   
   when all of the tasks for one User are done, the outermost completion callback is finally executed and we move on to the next user on the
   */
- 
+ func getUsersForSlice(sliceno:Int,slicecount:Int,atend:([SmaxxUser])->()){
+    var users:[SmaxxUser] = []
+    do {
+        try ZH.iselectfrom("select * from smaxxusers where smaxxtoken % ? = ? ", args: [slicecount,sliceno]) { rows in
+            for row in rows {
+                let a:[String:Any] = row
+                let p = a["igtoken"] as? String ?? ""
+                let q = a["name"] as? String ?? ""
+                let r = a["pic"] as? String ?? ""
+                let s = a["iguserid"] as? String ?? ""
+                let t = a["smaxxtoken"] as? String ?? ""
+                users.append( SmaxxUser(igtoken:p  , iguserid: s, name: q, pic: r, smaxxtoken: t))
+            }
+            
+        }
+    }
+    catch {
+    }
+    atend(users)
+ }
  
  final  class InstagramPoller {
     
@@ -91,24 +110,21 @@
     let timerqueue = DispatchQueue(label: "com.midnightrambler.timer", attributes:.concurrent)
     var finalcomphandler: UseridStatusCompletionHandler
     var modelstoreURL:URL?
-    var exportstoreURL:URL?
+ 
 
     init?( tag:String,
            cycleTime:Int,
            modelstoreURL:URL? ,
-           exportstoreURL:URL? ,
            finalcomphandler: @escaping UseridStatusCompletionHandler) {
         self.context = tag
         self.modelstoreURL = modelstoreURL
-        
-        self.exportstoreURL = exportstoreURL
         self.baseCycleTime = cycleTime
         self.finalcomphandler = finalcomphandler
         self.thisUserTask = nil
         
         // load users from smax
         
-        zh.getUsersForSlice(sliceno: 0, slicecount: 1) { smaxxusers in
+        getUsersForSlice(sliceno: 0, slicecount: 1) { smaxxusers in
             for smaxxuser  in smaxxusers {
                 perUserTasks.append(UserTask(userid: smaxxuser.iguserid, igtoken:smaxxuser.igtoken))
             }
@@ -145,11 +161,11 @@
         self.model.cyclenumber += 1
         let elapsed = String(format:"%0.2f",(self.model.cycleelapsed))
         let expstarttime = Date()
-        self.saveModelAndExportAtBitterEnd(uid,exportURL: exportstoreURL)
+        self.saveModelAndExportAtBitterEnd(uid) // no longer doing auto export of straight sql
         
         let savetime = String(format:"%0.2f",Date().timeIntervalSince(expstarttime))
         
-        dbgprint("  - \(uid) cycle finished status: \(status) apicount: \(globalBuckets.totalcount - cnt.apiCountThisCycle) elpased: \(elapsed) \(savetime) ")
+        dbgprint("  - \(uid) cycle finished status: \(status) apicount: \( globalData.bkts.totalcount - cnt.apiCountThisCycle) elpased: \(elapsed) \(savetime) ")
         
         thisUserTask?.makeIdle() // otherwise mark me as idle
         finally(uid,status)
@@ -259,7 +275,7 @@
                         // reset counter
                         self.cnt.cycleSecsDowncounter = self.baseCycleTime - 1
                         //// here every cycle secs
-                        self.cnt.apiCountThisCycle =  globalBuckets.totalcount
+                        self.cnt.apiCountThisCycle =   globalData.bkts.totalcount
                         self.cnt.pollcount += 1
                         // figure out what to do, and if anything
                         

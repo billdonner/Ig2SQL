@@ -7,36 +7,31 @@
 
 import Foundation
 
+public typealias ReportCallback = (([String], [[String]],TimeInterval)->Void)
 public enum ReportKind:String {
     case samples
     case heartless
     case topposts
     
-   public static  func make(s:String) -> ReportKind?  {
-        return rk.findreport(s)
-        
-    }
-    
-    func findreport(_ s:String) -> ReportKind? {
+    public static  func make(s:String) -> ReportKind?  {
         let xx:[String:ReportKind]  = ["samples":.samples,"heartless":.heartless,"topposts":.topposts]
         return xx[s]
-    }
-    typealias ReportCallback = (([String], [[String]],TimeInterval)->Void)
+    } 
     
-    func anyreport(_ userid:String,name:ReportKind, callback:ReportCallback) ->  Bool  {
-     
+    public static   func anyreport(_ userid:String,name:ReportKind, callback:ReportCallback) ->  Bool  {
+        
         do {
             
             print("\n\n")
             
-        switch name {
-        case .samples:
-            try  samplesReport(userid,callback:callback)
-        case .heartless:
-            try  heartlessReport(userid,callback:callback)
-        case .topposts:
-            try  toppostsReport(userid,callback:callback)
-        }
+            switch name {
+            case .samples:
+                try  samplesReport(userid,callback:callback)
+            case .heartless:
+                try  heartlessReport(userid,callback:callback)
+            case .topposts:
+                try  toppostsReport(userid,callback:callback)
+            }
         }
         catch {
             print("problem generating \(name) for \(userid)")
@@ -46,13 +41,13 @@ public enum ReportKind:String {
     }
     
     // run the report and copy out the results, call the callback
-    func rep (stmnt:String,tag:String,  callback:ReportCallback ) throws {
+    static func rep (stmnt:String,tag:String,  callback:ReportCallback ) throws {
         let st = Date()
-         var repheader:[String] = []
+        var repheader:[String] = []
         var repdata : [[String]] = []
         var first = true
-        try zh.iselectfrom( stmnt, args: [ ]) { rows in
-        
+        try ZH.iselectfrom( stmnt, args: [ ]) { rows in
+            
             for ff in rows {
                 var line:[String] = []
                 if first {
@@ -66,7 +61,7 @@ public enum ReportKind:String {
                 let ny = "\(ff.map{$1})"
                 print (" ",ny)
                 for f in ff {
-                line.append("\(f.1)")
+                    line.append("\(f.1)")
                 }
                 repdata.append(line)
                 first = false
@@ -78,12 +73,12 @@ public enum ReportKind:String {
             print("  \(x)ms READY> ")
         }
     }//rep
-
-    private func samplesReport(_ userid:String , callback:ReportCallback) throws  {
-       
+    
+    private static func samplesReport(_ userid:String , callback:ReportCallback) throws  {
+        
         func printrowsOfTable(_ table:String,args:[Any],limit:Int = 10 ) throws {
             var first = true
-            try zh.iselectfrom(  "SELECT * FROM \(table) LIMIT \(limit)", args: args) { rows in
+            try ZH.iselectfrom(  "SELECT * FROM \(table) LIMIT \(limit)", args: args) { rows in
                 for ff in rows {
                     if first {
                         print ("Table - \(table) \(ff.map{$0.key})")
@@ -120,7 +115,7 @@ public enum ReportKind:String {
 }
 extension ReportKind {
     
-    fileprivate func toppostsReport(_ userid:String  , callback:ReportCallback) throws   {
+    fileprivate static func toppostsReport(_ userid:String  , callback:ReportCallback) throws   {
         let stmnt = """
 SELECT mediaid  post_that_is_liked,
           userid   userid_of_liker ,
@@ -135,7 +130,7 @@ SELECT mediaid  post_that_is_liked,
         return try rep(stmnt:stmnt,tag:tag , callback:callback )
         
     }
-    fileprivate func heartlessReport(_ userid:String, callback:ReportCallback ) throws  {
+    fileprivate static func heartlessReport(_ userid:String, callback:ReportCallback ) throws  {
         let stmnt = """
 -- following not followers
 -- SELECT 'CREATING IIGNOTER -  FOLLOWINGS NOT IN FOLLOWERS' AS 'FAN-ONLYS';

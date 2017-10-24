@@ -189,8 +189,8 @@ class SQLMaker {
     }
     fileprivate func executeFollowersInserts() {
         model.followers.forEach { (  user) in
-            zh.followerblocksInsert(userid: user.id, iguserid: model.user.id)
-            zh.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
+            ZH.followerblocksInsert(userid: user.id, iguserid: model.user.id)
+            ZH.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
         }
     }
     fileprivate func genFollowingInserts() {
@@ -204,8 +204,8 @@ class SQLMaker {
     }
     fileprivate func executeFollowingInserts() {
         model.followings.forEach { (  user) in
-            zh.followingblocksInsert(userid: user.id, iguserid: model.user.id)
-            zh.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
+            ZH.followingblocksInsert(userid: user.id, iguserid: model.user.id)
+            ZH.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
         }
     }
     fileprivate func genRequestedByInserts() {
@@ -219,8 +219,8 @@ class SQLMaker {
     }
     fileprivate func executeRequestedByInserts() {
         model.requestedby.forEach { (  user) in
-            zh.requestedbyblocksInsert(userid: user.id, iguserid: model.user.id)
-            zh.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
+            ZH.requestedbyblocksInsert(userid: user.id, iguserid: model.user.id)
+            ZH.userblocksInsert(userid: user.id, username: user.username, full_name: user.full_name, profile_picture: user.profile_picture, iguserid: model.user.id)
         }
     }
  
@@ -277,26 +277,26 @@ class SQLMaker {
         let  data =   model.mediadata
         for (_,media) in data {
             
-            zh.mediadatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
+            ZH.mediadatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
        
             
             
             
-            media.users_in_photo.forEach({ (uip) in  zh.userpositionInsert(mediaid :media.id,userid  :uip.user.id,x:Float(uip.position.x),y:Float(uip.position.y),iguserid:model.user.id)
+            media.users_in_photo.forEach({ (uip) in  ZH.userpositionInsert(mediaid :media.id,userid  :uip.user.id,x:Float(uip.position.x),y:Float(uip.position.y),iguserid:model.user.id)
             })
             let x = flattenIGTags(media, userid: model.user.id)
             x.forEach({ (ftp) in
-                zh.mediaTaggedInsert(mediaid:  ftp.id, tag: cleanup(ftp.tag), iguserid: ftp.user_id)
+                ZH.mediaTaggedInsert(mediaid:  ftp.id, tag: cleanup(ftp.tag), iguserid: ftp.user_id)
             })
             media.images?.forEach({ (key,imagespec) in
-                zh.mediaImagesInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
+                ZH.mediaImagesInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
             })
             media.videos?.forEach({ (key,imagespec) in
-                zh.mediaVideosInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
+                ZH.mediaVideosInsert(mediaid: media.id, url: imagespec.url, width: imagespec.width, height: imagespec.height, iguserid: model.user.id)
             })
             
             model.likersOf[media.id]?.forEach {  userid in
-                zh.likersofmediaInsert(mediaid: media.id, userid: userid, iguserid: model.user.id)
+                ZH.likersofmediaInsert(mediaid: media.id, userid: userid, iguserid: model.user.id)
             }
             
             
@@ -305,7 +305,7 @@ class SQLMaker {
   
         model.commentdata.forEach {   arg   in
             let (_,comment) = arg
-            zh.commentsofmediaInsert(mediaid: comment.id, comment: comment.text, userid: comment.from.id, created_time: comment.created_time, iguserid: model.user.id)
+            ZH.commentsofmediaInsert(mediaid: comment.id, comment: comment.text, userid: comment.from.id, created_time: comment.created_time, iguserid: model.user.id)
         }
     }
     fileprivate func genLikeInserts() {
@@ -316,7 +316,7 @@ class SQLMaker {
          let data = model.likesdata
         for ( _,media) in data {
  
-        zh.likesdatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
+        ZH.likesdatablocksInsert(mediaid: media.id, filter: media.filter , type: media.type, link: media.link, countcomments: media.comments.count, countlikes: media.likes.count, user_has_liked: media.user_has_liked, caption_text:media.caption?.text ?? "xxx", caption_created_time: media.caption?.created_time ?? "1234", caption_id: media.caption?.id ?? "00", caption_from_id: media.caption?.from.id ?? "99" , location_id: media.location?.id ?? UInt64(0.0), iguserid: model.user.id , created_time: media.created_time)
         
         }
       
@@ -329,7 +329,7 @@ class SQLMaker {
     }
     fileprivate func executeAboutMeInserts() {
         let u = model.user
-        zh.iguserInsert(bio: cleanup(u.bio), username: u.username, full_name: u.full_name, profile_picture: u.profile_picture, website: u.website, iguserid: u.id)
+        ZH.iguserInsert(bio: cleanup(u.bio), username: u.username, full_name: u.full_name, profile_picture: u.profile_picture, website: u.website, iguserid: u.id)
     }
     fileprivate  func genloadDB( )->String {
         obuf = ""

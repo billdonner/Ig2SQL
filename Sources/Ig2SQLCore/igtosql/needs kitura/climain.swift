@@ -27,6 +27,7 @@ import LoggerAPI
 struct Config {
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
+    
     static let igVerificationToken = "zzABCDEFG0123456789zz"
     // verizon routr maps external addr with port 9090 to 192.168.2.2:8080
     static let report_port   = 8090
@@ -34,7 +35,16 @@ struct Config {
     static let webadmin_port = 8070
     
 }
- 
+
+public enum RemoteCallType {
+    case tURLSession
+    case tKituraSynch
+    case tKituraRequest
+    case tContentsOfFile
+}
+
+public let remoteCallType = RemoteCallType.tKituraSynch
+
 open class GlobalData {
     
     static  let jsonDecoder = JSONDecoder()
@@ -46,9 +56,17 @@ open class GlobalData {
         public   var postOut = 0
         
     }
+    open var serverip : String = ""
     open var apic = ApiCounters()
     open var usersLoggedOn : [Int:[String:Any]] = [:]
     open var usersHack: [String:[String:String]] = [:]
+
+    var reportServiceIsBooted = false
+    var loginServiceIsBooted = false
+    var adminServiceIsBooted = false
+    
+    var bkts = APIBuckets() // scratch space
+    
     public init () {
         
     }
@@ -124,38 +142,25 @@ class  UserTask {
     }
     func countApi() {
         // self.apiBuckets.apicount(1)
-        globalBuckets.apicount(1)
+         globalData.bkts.apicount(1)
     }
 }
 
 
 
- var reportServiceIsBooted = false
- var loginServiceIsBooted = false
- var adminServiceIsBooted = false
+let globalData = GlobalData()
 
-var serverip : String = ""
-   let globalData = GlobalData()
-var health = Health()
-
-var rk : ReportKind  = .samples
-
-var igPoller : InstagramPoller?
-
-var zh = ZH()
-
-var lc : LoginController?
-
-var startdate =  Date()
-
-var globalBuckets = APIBuckets() // scratch space
 
 // MARK:- open db, handle command arguments
 
 
-fileprivate func startPolling(_ argcv: Argstuff) {
+public func cliMain(_ argcv:Argstuff) {
+    
+    var igPoller : InstagramPoller?
+    
+ func startPolling(_ argcv: Argstuff) {
     igPoller = InstagramPoller(tag:"started-\(Date())",
-    cycleTime:argcv.cycleSeconds,   modelstoreURL:argcv.modelstoreURL,exportstoreURL:argcv.exportstoreURL ){ title,status  in
+    cycleTime:argcv.cycleSeconds,   modelstoreURL:argcv.modelstoreURL){ title,status  in
         print ("finalcomphandler for bm \(title) \(status)")
     }
     if let thebm = igPoller {
@@ -167,16 +172,31 @@ fileprivate func startPolling(_ argcv: Argstuff) {
     }
 }
 
-public func cliMain(_ argcv:Argstuff) {
+    func discoverIpAddress(completion:@escaping (String) ->()) {
+        KituraRequest.request(.get, "https://api.ipify.org?format=json").response {
+            request, response, data, error in
+            guard error == nil  else {
+                fatalError("remoteHTTPCall to api.ipify.org completing  error \(String(describing: error))")
+            }
+            do {
+                let rez = try GlobalData.jsonDecoder.decode(SomeIp.self, from: data!)
+                completion(rez.ip )
+            }
+            catch {
+                fatalError("no ip address for this Kitura Server instance, status is \(String(describing: error))")
+            }
+        }
+    }
+    
     
     // processed args passed in
     
-    try! zh.openigbase()
+    try! ZH.openigbase()
     
     switch argcv.doop {
         
     case .report:
-        let _ =  rk.anyreport(argcv.userID,name:argcv.reportName ) { headers, data, elapsed  in
+        let _ =  ReportKind.anyreport(argcv.userID,name:argcv.reportName ) { headers, data, elapsed  in
             
         }
         exit(0)
@@ -187,18 +207,18 @@ public func cliMain(_ argcv:Argstuff) {
         exit(0)
         
     case .create:
-        zh.createallTables()
+        ZH.createallTables()
         exit(0)
         
     case .force:
-        try! zh.freshdb(Config.dbname)
-        zh.createallTables()
+        try! ZH.freshdb(Config.dbname)
+        ZH.createallTables()
         exit(0)
         
     case .export:
         if let furl = argcv.modelstoreURL?.appendingPathComponent("model").appendingPathExtension("json"),
             let uid = argcv.modelstoreURL?.lastPathComponent,
-                let ex = argcv.exportstoreURL {
+            let ex = argcv.exportstoreURL {
             SQLMaker.makesql(furl: furl,uid: uid, exportURL: ex)
             exit(0)
         }
@@ -206,35 +226,33 @@ public func cliMain(_ argcv:Argstuff) {
         
     case .once,.poller:
         startPolling(argcv)
-
+        
     case .reportService:
         HeliumLogger.use()
-        LoginController.discoverIpAddress() { ip in
-            serverip = ip
+        discoverIpAddress() { ip in
+            globalData.serverip = ip
             bootReportWebService()
             // Start the Kitura runloop (this call never returns)
-            reportServiceIsBooted = true
+            globalData.reportServiceIsBooted = true
             Kitura.run()
         }
         
     case .loginService:
         HeliumLogger.use()
-
-        LoginController.discoverIpAddress() { ip in
-            serverip = ip
+        discoverIpAddress() { ip in
+            globalData.serverip = ip
             bootLoginWebService()
             // Start the Kitura runloop (this call never returns)
-            loginServiceIsBooted = true
+            globalData.loginServiceIsBooted = true
             Kitura.run()
         }
     case .adminService:
         HeliumLogger.use()
-        
-        LoginController.discoverIpAddress() { ip in
-            serverip = ip
+        discoverIpAddress() { ip in
+            globalData.serverip = ip
             bootAdminWebService()
             // Start the Kitura runloop (this call never returns)
-            adminServiceIsBooted = true
+            globalData.adminServiceIsBooted = true
             Kitura.run()
         }
         
@@ -242,14 +260,6 @@ public func cliMain(_ argcv:Argstuff) {
 }//theMain
 
 
-public enum RemoteCallType {
-    case tURLSession
-    case tKituraSynch
-    case tKituraRequest
-    case tContentsOfFile
-}
-
-public let remoteCallType = RemoteCallType.tKituraSynch
 
 public func qrandom(max:Int) -> Int {
     #if os(Linux)
