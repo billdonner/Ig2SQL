@@ -128,7 +128,7 @@ func bootReportWebService() {
         next()
     }
     
-    Log.error("Smaxx Report Service started on port \(Config.report_port)")
+    //Log.error("Smaxx Report Service started on port \(Config.report_port)")
     // Add an HTTP server and connect it to the router
     let srv = Kitura.addHTTPServer(onPort: Config.report_port, with: router)
     

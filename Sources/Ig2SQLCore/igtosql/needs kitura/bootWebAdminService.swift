@@ -81,7 +81,7 @@ func bootAdminWebService() {
         next()
     }
     
-    Log.error("Smaxx WebAdmin Service started on port \(Config.webadmin_port)")
+    //Log.error("Smaxx WebAdmin Service started on port \(Config.webadmin_port)")
     // Add an HTTP server and connect it to the router
     let srv = Kitura.addHTTPServer(onPort: Config.webadmin_port, with: router)
     
