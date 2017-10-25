@@ -23,7 +23,7 @@ import HeliumLogger
 import LoggerAPI
 
 struct Config {
-    static let version = "0.0.2"
+    static let version = "0.0.3"
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
     

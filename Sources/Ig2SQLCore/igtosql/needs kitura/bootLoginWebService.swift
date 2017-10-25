@@ -120,9 +120,7 @@ extension LoginController {
 
 
 extension LoginController {
-    
     /// OAuth2 steps with Instagram
-    
     open func STEP_ONE(_ response: RouterResponse) {
         let loc =  Instagramm.Router.requestOauthCode(clientId,callbackUrl).makeURLRequest().url!.absoluteString
         Log.error("STEP_ONE redirecting to Instagram authorization \(loc)")
@@ -209,23 +207,19 @@ extension LoginController {
             } else {
                 print("--no code")
         }
-        
     }// end of step two
     
     
     /// make subscription
-    open func make_subscription (_ outerresponse:RouterResponse, access_token:String, subscriptionVerificationToken:String) {
-        
-        /// DispatchQueue(label: "com.foo.bar", qos: DispatchQoS.utility).async {
-        
-        Log.info(">>>>>make_subscription for \(subscriptionVerificationToken) callback is \(self.callbackPostUrl) ")
+    open func make_subscription (_ outerresponse:RouterResponse, access_token:String) {
+        Log.info(">>>>>make_subscription for \(Config.igVerificationToken) callback is \(self.callbackPostUrl) ")
                let params:[String:String] = [
             "access_token" : "\(access_token)",
             "client_id" : "\(self.clientId)",
             "client_secret": "\(self.clientSecret)" ,
             "object": "user",
             "aspect": "media",
-            "verify_token": "\(subscriptionVerificationToken)",
+            "verify_token": "\(Config.igVerificationToken)",
             "callback_url":"\(self.callbackPostUrl)" ]
         
         KituraRequest.request(.post,
@@ -235,20 +229,20 @@ extension LoginController {
                                 request, response, data, error in
                                 // do something with data
                                 guard error == nil  else {
-                                    sendErrorResponse(outerresponse, status: 501, message: "INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful )")
+                                    sendErrorResponse(outerresponse, status: 501, message: "INSTAGRAM SAYS subscriptionPostCallback \(Config.igVerificationToken) was unsuccessful )")
                                     return
                                 }
                                 guard  let data = data else {
-                                    sendErrorResponse(outerresponse, status: 502, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) returned with no data")
+                                    sendErrorResponse(outerresponse, status: 502, message:"INSTAGRAM SAYS subscriptionPostCallback \(Config.igVerificationToken) returned with no data")
                                     return
                                 }
                                 let rez = try! GlobalData.jsonDecoder.decode(Instagramm.MetaResponse.self, from: data)
                                 
                                 guard rez.meta.code == 200 else {
-                                    sendErrorResponse(outerresponse, status: 503, message:"INSTAGRAM SAYS subscriptionPostCallback \(subscriptionVerificationToken) was unsuccessful meta \(rez.meta.code) \(rez.meta.error_message)")
+                                    sendErrorResponse(outerresponse, status: 503, message:"INSTAGRAM SAYS subscriptionPostCallback \(Config.igVerificationToken) was unsuccessful meta \(rez.meta.code) \(rez.meta.error_message)")
                                     return
                                 }
-                                sendOKResponse(outerresponse,data:["reason" :" INSTAGRAM SAYS  subscriptionPostCallback \(subscriptionVerificationToken) successful"])
+                                sendOKResponse(outerresponse,data:["reason" :" INSTAGRAM SAYS  subscriptionPostCallback \(Config.igVerificationToken) successful"])
         }// response from immediate post
     }
 }
@@ -288,7 +282,6 @@ func bootLoginWebService() {
                 SQLMaker.deleteLoginCredentials(smaxxtoken: smtoken)
                 globalData.usersLoggedOn[smtoken] = nil
                 sendOKResponse(response, data:["desc":"logged out from here"])
-                
             }
             sendErrorResponse(response, status: 402, message: "notloggedon")
         })
@@ -323,9 +316,7 @@ func bootLoginWebService() {
         } else { // ill-formed smtoken
             return   missingID(response)
         }
-        
     }
-    
     router.get("/authcallback" ) { request, response, next in
         //Log.error("************* /authcallback will authenticate ")
         loginController?.STEP_TWO (request, response: response ) { status in
@@ -366,14 +357,13 @@ func bootLoginWebService() {
         let ix = globalData.usersHack[who]
         guard let x = ix else {
             return   missingID(response)
-        }
-        
+        } 
         guard let _ = x["userid"], let token = x["apitoken"] else {
             return   missingID(response)
         }
         
         //
-        lc.make_subscription(response,access_token: token,subscriptionVerificationToken: Config.igVerificationToken)
+        lc.make_subscription(response,access_token: token )
         
         //next()
     }
