@@ -23,7 +23,7 @@ import HeliumLogger
 import LoggerAPI
 
 struct Config {
-    static let version = "0.0.3"
+    static let version = "0.0.5"
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
     
@@ -55,11 +55,16 @@ open class GlobalData {
         public   var postIn = 0
         public   var postOut = 0
     }
+    open var serverport: UInt16 = 0
     open var serverip : String = ""
+    open var servertitle : String = ""
+    open var serverdescription : String = ""
     open var apic = ApiCounters()
     open var usersLoggedOn : [Int:[String:Any]] = [:]
     open var usersHack: [String:[String:String]] = [:]
 
+    let boottime = Date()
+    
     var reportServiceIsBooted = false
     var loginServiceIsBooted = false
     var adminServiceIsBooted = false
@@ -238,6 +243,7 @@ public func cliMain(_ argcv:Argstuff) {
         HeliumLogger.use()
         discoverIpAddress() { ip in
             globalData.serverip = ip
+            globalData.serverport = UInt16(Config.report_port)
             bootReportWebService()
             // Start the Kitura runloop (this call never returns)
             globalData.reportServiceIsBooted = true
@@ -247,7 +253,8 @@ public func cliMain(_ argcv:Argstuff) {
     case .loginService:
         HeliumLogger.use()
         discoverIpAddress() { ip in
-            globalData.serverip = ip
+            globalData.serverip = ip 
+            globalData.serverport = UInt16(Config.login_port)
             bootLoginWebService()
             // Start the Kitura runloop (this call never returns)
             globalData.loginServiceIsBooted = true
@@ -257,6 +264,7 @@ public func cliMain(_ argcv:Argstuff) {
         HeliumLogger.use()
         discoverIpAddress() { ip in
             globalData.serverip = ip
+            globalData.serverport = UInt16(Config.webadmin_port)
             bootAdminWebService()
             // Start the Kitura runloop (this call never returns)
             globalData.adminServiceIsBooted = true

@@ -16,13 +16,9 @@ import Dispatch
 
 
 fileprivate class LoginController {
-    static let serviceDescription :[String:String] =
-        ["framework":"Ig2SQLLoginService",
-         "applicationName": "IG2SQL",
-         "company": "PurplePeople",
-         "organization": "DonnerParties",
-         "location" : "New York, NY",
-         "version"  :  Config.version ]
+ 
+
+    
     
     static let boottime = Date()
     static let appscope = "basic+likes+comments+relationships+follower_list+public_content"
@@ -248,6 +244,12 @@ extension LoginController {
 }
 
 func bootLoginWebService() {
+
+    func jsonresp () -> Ig2SQLStatus {
+        let now = Date()
+        return Ig2SQLStatus(  servertitle:  "Ig2SQLLoginService",  applicationName:"IG2SQL", dbName:"igbase",description: "1/1 instance",  company: "PurplePeople", organization: "DonnerParties", location: "New York, NY", version: Config.version,  serverurl: globalData.serverip, serverport: globalData.serverport,uptime: now.timeIntervalSince(globalData.boottime), timenow: now, httpgets:  globalData.apic.getIn,status:200 )
+    }
+    
     
     var loginController: LoginController!
     //print("booting LoginWebService on port \(Config.login_port)")
@@ -263,9 +265,13 @@ func bootLoginWebService() {
     // Dont Handle HTTP GET requests to /
     
     // JSON Get request
-    router.get("/json") { request, response, next in
-        sendOKResponse(response, data: LoginController.serviceDescription)
-    } 
+    router.get("/json") {
+        request, response, next in
+        let jsondata = try! GlobalData.jsonEncoder.encode( jsonresp() )
+        sendOKPreEncoded(response,data:jsondata)
+        next()
+    }
+    
     // MARK: Callback GETs and POSTs from IG come here
     ///
     router.get("/logout")  { request, response, next in

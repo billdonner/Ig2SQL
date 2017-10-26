@@ -1,5 +1,5 @@
 //
-//  bootReportWebService
+//  bootAdminWebService
 //  igtosql
 //
 //  Created by william donner on 9/15/17.
@@ -11,22 +11,22 @@ import Kitura
 import LoggerAPI
 
 func bootAdminWebService() {
-    let adminserviceDescription:[String:String] = ["framework":"Ig2SQLWebAdminService",
-                                                    "applicationName": "IG2SQL",
-                                                    "company": "PurplePeople",
-                                                    "organization": "DonnerParties",
-                                                    "location" : "New York, NY",
-                                                    "version"  :  Config.version ]
-    
+
+    func jsonresp () -> Ig2SQLStatus {
+        let now = Date() 
+        return Ig2SQLStatus(  servertitle:  "Ig2SQLWebAdminService",  applicationName:"IG2SQL", dbName:"igbase",description: "1/1 instance",  company: "PurplePeople", organization: "DonnerParties", location: "New York, NY", version: Config.version,  serverurl: globalData.serverip, serverport: globalData.serverport,uptime: now.timeIntervalSince(globalData.boottime), timenow: now, httpgets:  globalData.apic.getIn,status:200 )
+    }
     // Create a new router
     let router = Router()
-    // Dont Handle HTTP GET requests to /
-    
+    // Dont Handle HTTP GET requests to / 
     // JSON Get request
-    router.get("/json") { request, response, next in
-        sendOKResponse(response, data:  adminserviceDescription)
+    router.get("/json") {
+        request, response, next in
+        let jsondata = try! GlobalData.jsonEncoder.encode( jsonresp() )
+        sendOKPreEncoded(response,data:jsondata)
         next()
     }
+    
     
     router.get("/postcallback" ) {
         request, response, next in

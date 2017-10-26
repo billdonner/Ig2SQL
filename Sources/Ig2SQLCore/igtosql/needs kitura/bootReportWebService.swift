@@ -10,24 +10,15 @@ import Foundation
 import Kitura 
 import LoggerAPI
 
+
 func bootReportWebService() {
-    let reportserviceDescription :[String:String] = ["framework":"Ig2SQLReportService",
-                                                     "applicationName": "IG2SQL",
-                                                     "company": "PurplePeople",
-                                                     "organization": "DonnerParties",
-                                                     "location" : "New York, NY",
-                                                     "version"  :  Config.version ]
-    
-    
-    func generateReport (id:String,kind:ReportKind,qparams:[String:String], finally:((ReportResponseWrapped)->())) {
-        let _ = ReportKind.anyreport(id ,name:kind,callback: { reportheaders, reportdata, elapsed in
-            let rm =  ReportResponse(userid: id,reportname: "\(kind)", elapsed:elapsed,
-                                     queryParameters:qparams, reportHeaders:reportheaders, reportData:  reportdata )
-            let wr = ReportResponseWrapped(status: 200, time: Date(), response: rm)
-            finally(wr) // call back with response
-        })
+
+    func jsonresp () -> Ig2SQLStatus {
+        let now = Date()
+  
+                return Ig2SQLStatus(  servertitle:  "Ig2SQLReportService",  applicationName:"IG2SQL", dbName:"igbase",description: "1/1 instance",  company: "PurplePeople", organization: "DonnerParties", location: "New York, NY", version: Config.version,  serverurl: globalData.serverip, serverport: globalData.serverport,uptime: now.timeIntervalSince(globalData.boottime), timenow: now, httpgets:  globalData.apic.getIn,status:200 )
     }
-    
+
     // Create a new router
     let router = Router()
     
@@ -37,13 +28,24 @@ func bootReportWebService() {
     // JSON Get request
     router.get("/json") {
         request, response, next in
-        sendOKResponse(response, data:  reportserviceDescription)
+        let jsondata = try! GlobalData.jsonEncoder.encode( jsonresp() )
+        sendOKPreEncoded(response,data:jsondata) 
         next()
     }
     
     
     router.get("/report/:id/:name/") {
         request, response, next in
+        
+        func generateReport (id:String,kind:ReportKind,qparams:[String:String], finally:((ReportResponseWrapped)->())) {
+            let _ = ReportKind.anyreport(id ,name:kind,callback: { reportheaders, reportdata, elapsed in
+                let rm =  ReportResponse(userid: id,reportname: "\(kind)", elapsed:elapsed,
+                                         queryParameters:qparams, reportHeaders:reportheaders, reportData:  reportdata )
+                let wr = ReportResponseWrapped(status: 200, time: Date(), response: rm)
+                finally(wr) // call back with response
+            })
+        }
+        
         
         if let id = request.parameters["id"],
             let name = request.parameters["name"],
