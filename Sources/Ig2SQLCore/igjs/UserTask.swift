@@ -12,16 +12,16 @@ public struct CommandHandler {
     
     private static func badform() -> Argstuff? {
         print("Ig2SQL  export  -dModelPath -xExportTopFolderPath // no db needed, generates mysql import file");
-        print("Ig2SQL  create  // makes tables,unless they already exists");
-        print("Ig2SQL  force   // makes tables, drops them first");
-        print("Ig2SQL  poller   [-c=600] [ -insert=1] // default is to insert records");
-        print("Ig2SQL  once     [ -insert=1] // default is to insert records repeatedly");
-        print("Ig2SQL  status");
-        print("Ig2SQL  report    -iUIDfor -rNameofReport");
-        print("Ig2SQL  reportsrv // kitura starts on 8090");
-        print("Ig2SQL  loginsrv  // kitura starts on 8080");
-        print("Ig2SQL  adminsrv  // kitura starts on 8070");
-        print("Ig2SQL  version ");
+        print("Ig2SQL  create  // makes tables,unless they already exists"                                    );
+        print("Ig2SQL  force   // makes tables, drops them first"                                             );
+        print("Ig2SQL  poller   [-c=600] [ -insert=1] // default is to insert records"                        );
+        print("Ig2SQL  once     [ -insert=1] // default is to insert records repeatedly"                      );
+        print("Ig2SQL  status"                                                                                );
+        print("Ig2SQL  report    -iUIDfor -rNameofReport"                                                     );
+        print("Ig2SQL  reportsrv // kitura starts on 8090"                                                    );
+        print("Ig2SQL  loginsrv  // kitura starts on 8080"                                                    );
+        print("Ig2SQL  adminsrv  // kitura starts on 8070"                                                    );
+        print("Ig2SQL  version "                                                                              );
         return nil
     }
     

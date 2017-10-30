@@ -8,7 +8,15 @@
 
 import Foundation
 
+public typealias DDInt64 = Int
 
+struct LoginCreds : Codable {
+    let igtoken : String
+    let name : String
+    let pic : String
+    let iguserid : String
+    let smaxxtoken: DDInt64
+}
 
 class SQLMaker {
     var obuf = ""
@@ -572,7 +580,7 @@ class SQLMaker {
                     let q = a["name"] as? String ?? ""
                     let r = a["pic"] as? String ?? ""
                     let s = a["iguserid"] as? String ?? ""
-                    let t = a["smaxxtoken"] as? String ?? ""
+                    let t = a["smaxxtoken"] as? DDInt64 ?? DDInt64(0)
                     users.append( SmaxxUser(igtoken:p  , iguserid: s, name: q, pic: r, smaxxtoken: t))
                 }
                 
@@ -617,10 +625,10 @@ class SQLMaker {
             print("  \(x)ms READY> ")
         }
     }//rep
+
     
-    
-    static func getLoginCredentials(smaxxtoken:Int,atend:(Bool, String,String,String,String,String)->()){
-        var p = "p", q = "q", r = "r", s = "s", t = "t"
+    static func getLoginCredentials(smaxxtoken:DDInt64,atend:(Bool,LoginCreds?)->()){
+        var p = "p", q = "q", r = "r", s = "s", t = DDInt64(0)
         var isin = false
         do {
             try ZH.iselectfrom("select * from smaxxusers where smaxxtoken=? limit 1 ", args: [smaxxtoken]) { row in
@@ -629,27 +637,27 @@ class SQLMaker {
                 q = a["name"] as? String ?? ""
                 r = a["pic"] as? String ?? ""
                 s = a["iguserid"] as? String ?? ""
-                t = a["smaxxtoken"] as? String ?? ""
-                
+                t = a["smaxxtoken"] as? DDInt64 ??  DDInt64(0)
                 isin = true
                 print("from select \(smaxxtoken) >>>>>>>>>>>>>", row)
                 
             }
         }
         catch {
+            atend( false, nil); return
         }
-        atend(isin, p,q,r,s,t)
+        atend(isin, LoginCreds(igtoken: p,name: q,pic: r,iguserid: s,smaxxtoken: t))
     }
-    static func setLoginCredentials(smaxxtoken:Int,igtoken:String,iguserid:String,name:String,pic:String) throws {
-        let vals = [igtoken,iguserid,name,pic,smaxxtoken] as [Any]
+    static func setLoginCredentials(_ creds:LoginCreds) throws {
+        let vals = [creds.igtoken,creds.iguserid,creds.name,creds.pic,creds.smaxxtoken] as [Any]
         try ZH.insertinto("smaxxusers",args: vals)
     }
-    static func deleteLoginCredentials(smaxxtoken:Int )  {
+    static func deleteLoginCredentials(smaxxtoken:DDInt64 )  {
         let b = ZH.deletefrom("smaxxusers",key:"smaxxtoken",val:smaxxtoken)
         if !b { print("delete from smaxxusers failed")}
     }
     
-    
+
     
     static func getModelBlob( iguserid:String,atend:(Bool, String, Date, String )->()){
         var   q = "q", r  = Date(), s = "s"

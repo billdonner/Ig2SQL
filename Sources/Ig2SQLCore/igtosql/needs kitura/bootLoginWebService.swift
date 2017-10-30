@@ -16,10 +16,7 @@ import Dispatch
 
 
 fileprivate class LoginController {
- 
-
-    
-    
+  
     static let boottime = Date()
     static let appscope = "basic+likes+comments+relationships+follower_list+public_content"
     var clientId : String = ""
@@ -164,9 +161,9 @@ extension LoginController {
                     Log.info("STEP_TWO Instagram sent back \(rez.access_token) and \(rez.user.id)")
                     /// stash these, creating new object if needed
                     
-                    let smtoken =  (rez.user.id + rez.access_token).hashValue
+                    let smtoken =  DDInt64((rez.user.id + rez.access_token).hashValue)
                     do {
-                        try SQLMaker.setLoginCredentials(smaxxtoken: smtoken, igtoken: rez.access_token, iguserid: rez.user.id, name: rez.user.username, pic: rez.user.profile_picture)
+                        try SQLMaker.setLoginCredentials(LoginCreds(igtoken: rez.access_token, name: rez.user.username, pic: rez.user.profile_picture, iguserid: rez.user.id, smaxxtoken: smtoken))
                     }
                     catch {
                         Log.error("STEP_TWOBEE  processInstagramResponse could not set logincredentials")// \(request.session)")
@@ -175,10 +172,11 @@ extension LoginController {
                     // w.start(userid,request,response)
                     // see if we can go somewhere interesting
                     
-                    let vv:[String:Any] = ["userid":rez.user.id,"smtoken":smtoken,"token":rez.access_token]
+               
+                    let vv =  Yaz(userid:rez.user.id,smtoken:smtoken,igtoken:rez.access_token)
                     globalData.usersLoggedOn[smtoken] = vv
                     ///TODO: when done debugging, dont include userid and token in here, the client has no need
-                    let tk = "/unwindor?token=\(rez.access_token)&userid=\(rez.user.id)&smaxx-token=\(smtoken)&smaxx-name=\(rez.user.username)&smaxx-pic=\(rez.user.profile_picture)"
+                    let tk = "/unwindor?userid=\(vv.userid)&smaxx-token=\(vv.smtoken)&smaxx-name=\(rez.user.username)&smaxx-pic=\(rez.user.profile_picture)"
                     do {
                         Log.info("STEP_TWOBEE redirect back to client with \(tk)")
                         try response.redirect(tk)  }
@@ -243,7 +241,20 @@ extension LoginController {
     }
 }
 
+struct DebugExitPath : Codable {
+    let status: Int
+    let message: String
+ 
+    static func sayGoodnight(_ response:RouterResponse) { 
+        let jsondata = try! GlobalData.jsonEncoder.encode(DebugExitPath(status: 200, message: "remote /exit was processed - goodbye") )
+        sendOKPreEncoded(response,data:jsondata)
+        exit(EXIT_SUCCESS)
+    }
+}
+
+
 func bootLoginWebService() {
+
 
     func jsonresp () -> Ig2SQLStatus {
         let now = Date()
@@ -263,7 +274,11 @@ func bootLoginWebService() {
     }
     
     // Dont Handle HTTP GET requests to /
-    
+    // EXIT_SUCCESS Get request
+    router.get("/exit") {
+        request, response, next in
+         DebugExitPath.sayGoodnight(response)
+    }
     // JSON Get request
     router.get("/json") {
         request, response, next in
@@ -279,11 +294,11 @@ func bootLoginWebService() {
         guard let smtokeni = request.queryParameters["smtoken"]  else {
             return  missingID(response)
         }
-        guard let smtoken = Int(smtokeni) else {
+        guard let smtoken = DDInt64(smtokeni) else {
             return  missingID(response)
         }
         
-       SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+       SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, logincreds in
             if isloggedon {
                 SQLMaker.deleteLoginCredentials(smaxxtoken: smtoken)
                 globalData.usersLoggedOn[smtoken] = nil
@@ -303,14 +318,16 @@ func bootLoginWebService() {
             lc.STEP_ONE(response) // will redirect to IG
             return
         }
-        if let smtoken = Int(smtokenstr) {
+        if let smtoken = DDInt64(smtokenstr) {
             // call sql service to read record keyed by 'smtoken'
-           SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+           SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, logincreds in
                 
                 if isloggedon {
+                    if let creds = logincreds {
                     // if already logged on send back existing record
-                    let jsondata = try!  GlobalData.jsonEncoder.encode(SmaxxResponse(status: 203, igid: igid, pic: pic, smaxxtoken: smtoken, name: name))
+                    let jsondata = try!  GlobalData.jsonEncoder.encode(SmaxxResponse(status: 203, igid: (creds.iguserid) , pic: (creds.pic) , smaxxtoken: "\(smtoken)", name: (creds.name) ))
                     sendOKPreEncoded(response,data:jsondata)
+                    }
                 }
                 else
                 {
@@ -338,10 +355,10 @@ func bootLoginWebService() {
         
         do {
             let id = request.queryParameters["userid"] ?? "no id"
-            let smtoken = Int(request.queryParameters["smaxx-token"]!) ?? 0
+            let smtoken = DDInt64(request.queryParameters["smaxx-token"]!) ?? 0
             let name = request.queryParameters["smaxx-name"] ?? "no smname"
             let pic = request.queryParameters["smaxx-pic"] ?? "no smpic"
-            let dict = SmaxxResponse(status: 201, igid: id, pic: pic, smaxxtoken: smtoken, name: name)
+            let dict = SmaxxResponse(status: 201, igid: id, pic: pic, smaxxtoken: "\(smtoken)", name: name)
             let data = try  GlobalData.jsonEncoder.encode(dict)
             sendOKPreEncoded(response, data: data)
         }

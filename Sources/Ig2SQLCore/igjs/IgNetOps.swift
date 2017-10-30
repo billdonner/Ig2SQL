@@ -18,14 +18,14 @@ struct SmaxxUser : Codable {
      let iguserid:String
      let name:String
      let pic:String
-    let smaxxtoken:String
+    let smaxxtoken:DDInt64
 }
 
 struct SmaxxResponse: Codable {
     let status: Int
     let igid: String
     let pic:String
-    let smaxxtoken: Int
+    let smaxxtoken: String // travelling poorly, lets make it a string ---- DDInt64
     let name:String
 }
 

@@ -23,7 +23,7 @@ import HeliumLogger
 import LoggerAPI
 
 struct Config {
-    static let version = "0.0.5"
+    static let version = "0.0.6"
     static let maxMediaCount = 6 // is ignored in sandbox anyway
     static let dbname = "igbase"
     
@@ -43,6 +43,11 @@ public enum RemoteCallType {
 }
 
 public let remoteCallType = RemoteCallType.tKituraSynch
+public  struct Yaz : Codable {
+    let userid:String
+    let smtoken:Int
+    let igtoken:String
+}
 
 open class GlobalData {
     
@@ -60,7 +65,7 @@ open class GlobalData {
     open var servertitle : String = ""
     open var serverdescription : String = ""
     open var apic = ApiCounters()
-    open var usersLoggedOn : [Int:[String:Any]] = [:]
+    open var usersLoggedOn : [DDInt64:Yaz] = [:] // index is smaxxtoken
     open var usersHack: [String:[String:String]] = [:]
 
     let boottime = Date()

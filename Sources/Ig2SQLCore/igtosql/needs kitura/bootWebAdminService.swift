@@ -18,7 +18,12 @@ func bootAdminWebService() {
     }
     // Create a new router
     let router = Router()
-    // Dont Handle HTTP GET requests to / 
+    // Dont Handle HTTP GET requests to /
+    // EXIT_SUCCESS Get request
+    router.get("/exit") {
+        request, response, next in
+        DebugExitPath.sayGoodnight(response)
+    }
     // JSON Get request
     router.get("/json") {
         request, response, next in

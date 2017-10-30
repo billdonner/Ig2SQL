@@ -24,7 +24,11 @@ func bootReportWebService() {
     
     
     // Dont Handle HTTP GET requests to /
-    
+    // EXIT_SUCCESS Get request
+    router.get("/exit") {
+        request, response, next in
+        DebugExitPath.sayGoodnight(response)
+    }
     // JSON Get request
     router.get("/json") {
         request, response, next in
@@ -53,9 +57,9 @@ func bootReportWebService() {
             guard let smtokenstr =  request.queryParameters["smtoken"] else {
                 return   missingID(response)
             }
-            if let smtoken = Int(smtokenstr) {
+            if let smtoken = DDInt64(smtokenstr) {
                 // call sql service to read record keyed by 'smtoken'
-                SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, _,name,pic,igid,_ in
+                SQLMaker.getLoginCredentials (smaxxtoken: smtoken,atend: {isloggedon, logincreds in
                     if isloggedon {
                         // if already logged on send back existing record
                         // make report, call closure when finished
@@ -66,10 +70,11 @@ func bootReportWebService() {
                             sendOKPreEncoded(response,data:jsondata)
                             
                         }// generate closure
+                        
                     } // logged on
                     else
                     {
-                        sendErrorResponse(response, status: 400, message: "badrequest")
+                        sendErrorResponse(response, status: 400, message: "smtokenmismatch")
                         next()
                         return
                     } // not logged on

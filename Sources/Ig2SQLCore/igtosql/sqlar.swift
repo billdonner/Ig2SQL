@@ -47,7 +47,7 @@ igtoken   VARCHAR (255),
 iguserid   VARCHAR (255),
 name   VARCHAR (255),
 pic   VARCHAR (255),
-smaxxtoken INT PRIMARY KEY
+smaxxtoken  INT PRIMARY KEY
 );
 """,
                 "INSERT INTO smaxxusers (igtoken,iguserid,name,pic,smaxxtoken ) VALUES(?,?,?,?,?)"
